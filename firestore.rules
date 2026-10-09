@@ -1,0 +1,138 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default Deny Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == 'yakubusanishagari@gmail.com' && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'google.com')) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // 1. Categories
+    function isValidCategory(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 150 &&
+             data.slug is string && data.slug.size() > 0 && data.slug.size() <= 100 &&
+             (!('description' in data) || data.description is string);
+    }
+
+    match /categories/{categoryId} {
+      allow get, list: if true;
+      allow create: if isAdmin() && isValidId(categoryId) && isValidCategory(incoming());
+      allow update: if isAdmin() && isValidId(categoryId) && isValidCategory(incoming());
+      allow delete: if isAdmin() && isValidId(categoryId);
+    }
+
+    // 2. Subcategories
+    function isValidSubcategory(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.category_id is string && data.category_id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 150 &&
+             data.slug is string && data.slug.size() > 0 && data.slug.size() <= 100;
+    }
+
+    match /subcategories/{subcategoryId} {
+      allow get, list: if true;
+      allow create: if isAdmin() && isValidId(subcategoryId) && isValidSubcategory(incoming());
+      allow update: if isAdmin() && isValidId(subcategoryId) && isValidSubcategory(incoming());
+      allow delete: if isAdmin() && isValidId(subcategoryId);
+    }
+
+    // 3. Products
+    function isValidProduct(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 256 &&
+             data.price is number && data.price >= 0 &&
+             data.category_id is string && data.category_id.size() <= 128 &&
+             data.gender in ['Men', 'Women', 'Kids', 'Unisex'] &&
+             data.sku is string && data.sku.size() > 0 && data.sku.size() <= 100 &&
+             data.stock is number && data.stock >= 0 &&
+             data.main_image is string && data.main_image.size() <= 2048 &&
+             data.status in ['active', 'archived'];
+    }
+
+    match /products/{productId} {
+      allow get, list: if true;
+      allow create: if isAdmin() && isValidId(productId) && isValidProduct(incoming());
+      allow update: if isAdmin() && isValidId(productId) && isValidProduct(incoming());
+      allow delete: if isAdmin() && isValidId(productId);
+    }
+
+    // 4. Orders
+    function isValidOrder(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.customer is map &&
+             data.items is list && data.items.size() > 0 && data.items.size() <= 50 &&
+             data.subtotal is number && data.subtotal >= 0 &&
+             data.total_amount is number && data.total_amount >= 0 &&
+             data.payment_status in ['Pending', 'Payment Submitted', 'Awaiting Confirmation', 'Confirmed', 'Rejected'] &&
+             data.order_status in ['Pending', 'Processing', 'Ready for Delivery', 'Shipped', 'Delivered', 'Cancelled'];
+    }
+
+    match /orders/{orderId} {
+      allow get: if isValidId(orderId);
+      allow list: if isAdmin();
+      allow create: if isValidId(orderId) && isValidOrder(incoming()) && incoming().payment_status in ['Pending', 'Payment Submitted', 'Awaiting Confirmation'];
+      allow update: if isAdmin() && isValidId(orderId) && isValidOrder(incoming());
+      allow delete: if isAdmin() && isValidId(orderId);
+    }
+
+    // 5. Contact Messages
+    function isValidContactMessage(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 150 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() <= 50 &&
+             data.message is string && data.message.size() > 0 && data.message.size() <= 3000;
+    }
+
+    match /contact_messages/{messageId} {
+      allow get, list: if isAdmin();
+      allow create: if isValidId(messageId) && isValidContactMessage(incoming());
+      allow update, delete: if isAdmin() && isValidId(messageId);
+    }
+
+    // 6. Site Settings
+    function isValidSiteSettings(data) {
+      return data.business_name is string && data.business_name.size() > 0 && data.business_name.size() <= 200 &&
+             data.phone_number is string && data.phone_number.size() > 0 && data.phone_number.size() <= 50 &&
+             data.account_name is string && data.account_name.size() > 0 && data.account_name.size() <= 150 &&
+             data.account_number is string && data.account_number.size() > 0 && data.account_number.size() <= 50;
+    }
+
+    match /site_settings/{settingsId} {
+      allow get, list: if true;
+      allow create, update: if isAdmin() && isValidSiteSettings(incoming());
+      allow delete: if false;
+    }
+
+    // 7. Admin whitelist
+    match /admins/{adminId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+  }
+}

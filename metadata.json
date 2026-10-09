@@ -1,0 +1,6 @@
+{
+  "name": "Habeevatussunnah Online Business",
+  "description": "Premium modern fashion and general e-commerce store offering quality clothing, footwear, accessories, beauty and lifestyle products.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,167 @@
+{
+  "entities": {
+    "Category": {
+      "title": "Category",
+      "description": "Product category entity with multilingual names",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 150 },
+        "name_en": { "type": "string", "maxLength": 150 },
+        "name_ha": { "type": "string", "maxLength": 150 },
+        "name_ar": { "type": "string", "maxLength": 150 },
+        "slug": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "description_en": { "type": "string", "maxLength": 1000 },
+        "description_ha": { "type": "string", "maxLength": 1000 },
+        "description_ar": { "type": "string", "maxLength": 1000 },
+        "image_url": { "type": "string", "maxLength": 2048 },
+        "display_order": { "type": "number" },
+        "created_at": { "type": "string", "maxLength": 64 },
+        "updated_at": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "name", "slug"]
+    },
+    "Subcategory": {
+      "title": "Subcategory",
+      "description": "Subcategory under a primary category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "category_id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 150 },
+        "name_en": { "type": "string", "maxLength": 150 },
+        "name_ha": { "type": "string", "maxLength": 150 },
+        "name_ar": { "type": "string", "maxLength": 150 },
+        "slug": { "type": "string", "maxLength": 100 },
+        "display_order": { "type": "number" },
+        "created_at": { "type": "string", "maxLength": 64 },
+        "updated_at": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "category_id", "name", "slug"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Product catalogue item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 256 },
+        "name_en": { "type": "string", "maxLength": 256 },
+        "name_ha": { "type": "string", "maxLength": 256 },
+        "name_ar": { "type": "string", "maxLength": 256 },
+        "slug": { "type": "string", "maxLength": 256 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "description_en": { "type": "string", "maxLength": 5000 },
+        "description_ha": { "type": "string", "maxLength": 5000 },
+        "description_ar": { "type": "string", "maxLength": 5000 },
+        "price": { "type": "number" },
+        "discount_price": { "type": "number" },
+        "category_id": { "type": "string", "maxLength": 128 },
+        "subcategory_id": { "type": "string", "maxLength": 128 },
+        "gender": { "type": "string", "enum": ["Men", "Women", "Kids", "Unisex"] },
+        "sku": { "type": "string", "maxLength": 100 },
+        "stock": { "type": "number" },
+        "main_image": { "type": "string", "maxLength": 2048 },
+        "images": { "type": "array" },
+        "sizes": { "type": "array" },
+        "colors": { "type": "array" },
+        "variants": { "type": "array" },
+        "is_featured": { "type": "boolean" },
+        "is_new_arrival": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "reviews_count": { "type": "number" },
+        "tags": { "type": "array" },
+        "status": { "type": "string", "enum": ["active", "archived"] },
+        "created_at": { "type": "string", "maxLength": 64 },
+        "updated_at": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "name", "price", "category_id", "gender", "sku", "stock", "main_image", "status"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Store customer order with items and payment tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "customer": { "type": "object" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "delivery_fee": { "type": "number" },
+        "total_amount": { "type": "number" },
+        "payment_method": { "type": "string", "enum": ["OPAY_TRANSFER"] },
+        "payment_status": { "type": "string", "enum": ["Pending", "Payment Submitted", "Awaiting Confirmation", "Confirmed", "Rejected"] },
+        "order_status": { "type": "string", "enum": ["Pending", "Processing", "Ready for Delivery", "Shipped", "Delivered", "Cancelled"] },
+        "tracking_stage": { "type": "string", "enum": ["SELLER CONFIRMED", "PACKAGING", "HANDED TO LOGISTICS", "IN TRANSIT", "OUT FOR DELIVERY", "DELIVERED", "CANCELLED"] },
+        "tracking_updated_at": { "type": "string", "maxLength": 64 },
+        "created_at": { "type": "string", "maxLength": 64 },
+        "updated_at": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "customer", "items", "subtotal", "total_amount", "payment_status", "order_status"]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "Customer contact form message",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 150 },
+        "email": { "type": "string", "maxLength": 150 },
+        "phone": { "type": "string", "maxLength": 50 },
+        "message": { "type": "string", "maxLength": 3000 },
+        "is_read": { "type": "boolean" },
+        "created_at": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "name", "phone", "message"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Store site settings, OPay account details, and announcement",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "business_name": { "type": "string", "maxLength": 200 },
+        "phone_number": { "type": "string", "maxLength": 50 },
+        "secondary_phone": { "type": "string", "maxLength": 50 },
+        "email": { "type": "string", "maxLength": 150 },
+        "whatsapp_number": { "type": "string", "maxLength": 50 },
+        "whatsapp_destination": { "type": "string", "maxLength": 500 },
+        "payment_provider": { "type": "string", "maxLength": 50 },
+        "account_name": { "type": "string", "maxLength": 150 },
+        "account_number": { "type": "string", "maxLength": 50 },
+        "default_delivery_fee": { "type": "number" },
+        "currency_symbol": { "type": "string", "maxLength": 10 },
+        "announcement_banner": { "type": "string", "maxLength": 500 },
+        "background_theme": { "type": "string", "maxLength": 50 },
+        "updated_at": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["business_name", "phone_number", "whatsapp_number", "account_name", "account_number"]
+    }
+  },
+  "firestore": {
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Store product categories"
+    },
+    "/subcategories/{subcategoryId}": {
+      "schema": "Subcategory",
+      "description": "Store subcategories linked to category"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Store products with prices and inventory"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Store customer orders and order tracking"
+    },
+    "/contact_messages/{messageId}": {
+      "schema": "ContactMessage",
+      "description": "Store customer feedback and contact inquiries"
+    },
+    "/site_settings/{settingsId}": {
+      "schema": "SiteSettings",
+      "description": "Global store configuration"
+    }
+  }
+}
