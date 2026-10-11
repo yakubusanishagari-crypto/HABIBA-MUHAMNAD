@@ -9,9 +9,11 @@ import {
   Plus,
   Link as LinkIcon,
   AlertCircle,
-  Loader2
+  Loader2,
+  Camera,
+  Check
 } from 'lucide-react';
-import { uploadProductImage } from '../utils/imageUpload';
+import { uploadProductImage, ImageUploadProgress } from '../utils/imageUpload';
 
 interface ProductImageUploaderProps {
   images: string[];
@@ -27,12 +29,15 @@ export const ProductImageUploader: React.FC<ProductImageUploaderProps> = ({
   maxImages = 8
 }) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<ImageUploadProgress | null>(null);
+  const [uploadSuccessMessage, setUploadSuccessMessage] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [manualUrl, setManualUrl] = useState('');
   const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
 
   // Normalize image list ensuring mainImage is present
@@ -48,23 +53,51 @@ export const ProductImageUploader: React.FC<ProductImageUploaderProps> = ({
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploadError(null);
+    setUploadSuccessMessage(null);
     setIsUploading(true);
 
     try {
-      const uploadPromises = Array.from(files).map(file => uploadProductImage(file));
-      const results = await Promise.all(uploadPromises);
-      const newUrls = results.map(r => r.url);
+      const fileArray = Array.from(files);
+      const newUrls: string[] = [];
+
+      for (let i = 0; i < fileArray.length; i++) {
+        const file = fileArray[i];
+        setUploadProgress({
+          stage: `Processing image ${i + 1} of ${fileArray.length}: ${file.name}...`,
+          percent: Math.round(((i) / fileArray.length) * 100) + 10
+        });
+
+        const result = await uploadProductImage(file, 'products', progress => {
+          setUploadProgress({
+            stage: `[Image ${i + 1}/${fileArray.length}] ${progress.stage}`,
+            percent: Math.min(95, Math.round(((i) / fileArray.length) * 100) + Math.round(progress.percent / fileArray.length))
+          });
+        });
+
+        newUrls.push(result.url);
+      }
 
       const combined = [...allImages, ...newUrls].slice(0, maxImages);
       const newMain = mainImage || combined[0] || '';
 
       onChange(combined, newMain);
+      setUploadSuccessMessage(
+        fileArray.length === 1
+          ? 'Image uploaded and optimized successfully! Ready to save.'
+          : `${fileArray.length} images uploaded & optimized successfully!`
+      );
+
+      setTimeout(() => {
+        setUploadSuccessMessage(null);
+      }, 4000);
     } catch (err: any) {
       console.error('Image upload failed:', err);
       setUploadError(err.message || 'Failed to upload image. Please try again.');
     } finally {
       setIsUploading(false);
+      setUploadProgress(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
     }
   };
 
@@ -73,20 +106,27 @@ export const ProductImageUploader: React.FC<ProductImageUploaderProps> = ({
     const files = e.target.files;
     if (!files || files.length === 0 || replacingIndex === null) return;
     setUploadError(null);
+    setUploadSuccessMessage(null);
     setIsUploading(true);
 
     try {
-      const result = await uploadProductImage(files[0]);
+      setUploadProgress({ stage: 'Replacing image...', percent: 50 });
+      const result = await uploadProductImage(files[0], 'products', progress => {
+        setUploadProgress(progress);
+      });
       const updated = [...allImages];
       const oldUrl = updated[replacingIndex];
       updated[replacingIndex] = result.url;
 
       const newMain = mainImage === oldUrl ? result.url : mainImage;
       onChange(updated, newMain);
+      setUploadSuccessMessage('Image replaced successfully!');
+      setTimeout(() => setUploadSuccessMessage(null), 3000);
     } catch (err: any) {
       setUploadError(err.message || 'Failed to replace image.');
     } finally {
       setIsUploading(false);
+      setUploadProgress(null);
       setReplacingIndex(null);
       if (replaceInputRef.current) replaceInputRef.current.value = '';
     }
@@ -131,6 +171,15 @@ export const ProductImageUploader: React.FC<ProductImageUploaderProps> = ({
         className="hidden"
         onChange={e => handleFiles(e.target.files)}
       />
+      {/* Direct Mobile Camera Input */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={e => handleFiles(e.target.files)}
+      />
       <input
         ref={replaceInputRef}
         type="file"
@@ -149,7 +198,7 @@ export const ProductImageUploader: React.FC<ProductImageUploaderProps> = ({
         }}
         className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer group ${
           isUploading
-            ? 'border-emerald-400 bg-emerald-50/50'
+            ? 'border-emerald-400 bg-emerald-50/60'
             : 'border-emerald-200 hover:border-emerald-500 bg-emerald-50/30 hover:bg-emerald-50/70'
         }`}
       >
@@ -165,7 +214,9 @@ export const ProductImageUploader: React.FC<ProductImageUploaderProps> = ({
           <div>
             <p className="text-sm font-bold text-slate-800">
               {isUploading ? (
-                <span className="text-emerald-700">Uploading & Optimizing image...</span>
+                <span className="text-emerald-700 font-black">
+                  {uploadProgress?.stage || 'Processing & saving image...'}
+                </span>
               ) : (
                 <>
                   <span className="text-emerald-700 underline font-black">Click to upload from phone or computer</span>{' '}
@@ -174,22 +225,56 @@ export const ProductImageUploader: React.FC<ProductImageUploaderProps> = ({
               )}
             </p>
             <p className="text-xs text-slate-500 mt-1">
-              Supports <strong className="text-slate-700">JPG, PNG, WebP</strong> up to 12MB. You can select multiple photos at once.
+              Supports <strong className="text-slate-700">JPG, PNG, WebP</strong> up to 25MB. Auto-optimized to keep database fast & responsive.
             </p>
           </div>
 
-          <div className="flex items-center justify-center gap-3 pt-1">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-full">
-              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-              Direct Phone Camera & Gallery
-            </span>
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-full">
-              <CheckCircle2 className="w-3 h-3 text-amber-600" />
-              Auto-Persistent
-            </span>
+          {/* Quick upload triggers */}
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-1" onClick={e => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-emerald-200 text-emerald-800 text-xs font-bold shadow-xs hover:bg-emerald-50 transition-colors cursor-pointer"
+            >
+              <Camera className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Take Photo</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-700 text-white text-xs font-bold shadow-xs hover:bg-emerald-800 transition-colors cursor-pointer"
+            >
+              <UploadCloud className="w-3.5 h-3.5 text-amber-300" />
+              <span>Choose Photos</span>
+            </button>
           </div>
+
+          {/* Upload Progress Bar */}
+          {isUploading && uploadProgress && (
+            <div className="w-full max-w-xs mx-auto space-y-1.5 pt-2">
+              <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress.percent}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[11px] font-bold text-emerald-800">
+                <span>{uploadProgress.stage}</span>
+                <span>{uploadProgress.percent}%</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Success Notification */}
+      {uploadSuccessMessage && (
+        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span className="font-bold">{uploadSuccessMessage}</span>
+        </div>
+      )}
 
       {/* Error Alert */}
       {uploadError && (
@@ -250,11 +335,11 @@ export const ProductImageUploader: React.FC<ProductImageUploaderProps> = ({
                 }`}
               >
                 {/* Thumbnail */}
-                <div className="aspect-square w-full bg-slate-100 overflow-hidden flex items-center justify-center">
+                <div className="aspect-square w-full bg-slate-50 overflow-hidden flex items-center justify-center p-1.5">
                   <img
                     src={imgUrl}
                     alt={`Product preview ${index + 1}`}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                     onError={e => {
                       (e.target as HTMLImageElement).src =
                         'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80';

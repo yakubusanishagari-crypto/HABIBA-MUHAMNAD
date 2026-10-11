@@ -151,11 +151,11 @@ Could you please confirm availability and delivery?`;
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
           {/* Gallery Column (6 cols) */}
           <div className="lg:col-span-6 space-y-4 lg:sticky lg:top-28">
-            <div className="relative aspect-4/5 rounded-3xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-md">
+            <div className="relative aspect-4/5 rounded-3xl overflow-hidden bg-slate-50/80 border border-slate-200/80 shadow-md flex items-center justify-center p-3 sm:p-5">
               <img
                 src={selectedImage}
                 alt={product.name}
-                className="w-full h-full object-cover object-center"
+                className="w-full h-full object-contain object-center transition-transform duration-300 hover:scale-105"
                 decoding="async"
               />
               {product.is_new_arrival && (
@@ -186,13 +186,13 @@ Could you please confirm availability and delivery?`;
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(img)}
-                    className={`w-20 h-20 rounded-2xl overflow-hidden border-2 shrink-0 transition-all ${
+                    className={`w-20 h-20 rounded-2xl overflow-hidden border-2 shrink-0 transition-all bg-white flex items-center justify-center p-1 ${
                       selectedImage === img
                         ? 'border-slate-950 ring-2 ring-slate-950/20'
                         : 'border-slate-200 opacity-60 hover:opacity-100'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <img src={img} alt="" className="w-full h-full object-contain" />
                   </button>
                 ))}
               </div>

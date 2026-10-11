@@ -200,7 +200,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                   className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-700"
                   loading="eager"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
 
                 {/* Floating Badge on Image */}
                 <div className={`absolute bottom-5 left-5 right-5 p-4 rounded-2xl ${bgConfig.cardBgClass} backdrop-blur-md border border-amber-400/50 shadow-xl flex items-center justify-between`}>

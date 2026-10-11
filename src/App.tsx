@@ -21,30 +21,50 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { Product, Order } from './types';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
+const parseViewFromLocation = (): string => {
+  if (typeof window === 'undefined') return 'home';
+  const path = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+  const hash = window.location.hash.toLowerCase().replace(/^#\/?/, '').replace(/\/+$/, '');
+
+  // Admin portal routes (including direct access /admin, /admin/login, /admin/dashboard, /login)
+  if (
+    path === '/admin' ||
+    path.startsWith('/admin/') ||
+    path === '/login' ||
+    path === '/dashboard' ||
+    hash === 'admin' ||
+    hash.startsWith('admin/') ||
+    hash === 'login'
+  ) {
+    return 'admin';
+  }
+
+  if (path === '/checkout' || hash === 'checkout') return 'checkout';
+  if (path === '/products' || hash === 'products') return 'products';
+  if (path === '/women' || hash === 'women') return 'women';
+  if (path === '/kids' || hash === 'kids') return 'kids';
+  if (path === '/new-arrivals' || hash === 'new-arrivals') return 'new-arrivals';
+  if (path === '/about' || hash === 'about') return 'about';
+  if (path === '/contact' || hash === 'contact') return 'contact';
+  if (path === '/order-lookup' || hash === 'order-lookup') return 'order-lookup';
+  if (path === '/privacy' || hash === 'privacy') return 'privacy';
+  if (path === '/terms' || hash === 'terms') return 'terms';
+  if (path === '/returns' || hash === 'returns') return 'returns';
+  if (path === '/shipping' || hash === 'shipping') return 'shipping';
+
+  return 'home';
+};
+
 const AppContent: React.FC = () => {
   const { settings, toastMessage, quickViewProduct, setQuickViewProduct } = useShop();
 
-  const [currentView, setCurrentView] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const path = window.location.pathname;
-      const hash = window.location.hash;
-      if (path === '/admin' || path === '/admin/' || hash === '#/admin') {
-        return 'admin';
-      }
-    }
-    return 'home';
-  });
+  const [currentView, setCurrentView] = useState<string>(() => parseViewFromLocation());
 
-  // URL listener to support direct /admin access only
+  // URL listener to support direct access, back/forward navigation, and page refresh on Vercel
   React.useEffect(() => {
     const handleUrlSync = () => {
-      const path = window.location.pathname;
-      const hash = window.location.hash;
-      if (path === '/admin' || path === '/admin/' || hash === '#/admin') {
-        setCurrentView('admin');
-      } else if (currentView === 'admin') {
-        setCurrentView('home');
-      }
+      const detected = parseViewFromLocation();
+      setCurrentView(detected);
     };
 
     window.addEventListener('popstate', handleUrlSync);
@@ -53,14 +73,39 @@ const AppContent: React.FC = () => {
       window.removeEventListener('popstate', handleUrlSync);
       window.removeEventListener('hashchange', handleUrlSync);
     };
+  }, []);
+
+  // Synchronize browser URL bar when currentView changes
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const path = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+
+    if (currentView === 'admin') {
+      if (!path.startsWith('/admin') && path !== '/login') {
+        window.history.pushState(null, '', '/admin');
+      }
+    } else if (currentView === 'home') {
+      if (path.startsWith('/admin') || path === '/login') {
+        window.history.pushState(null, '', '/');
+      }
+    }
   }, [currentView]);
+
+  const handleNavigate = (view: string) => {
+    setCurrentView(view);
+    if (typeof window !== 'undefined') {
+      const targetPath = view === 'home' ? '/' : `/${view}`;
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState(null, '', targetPath);
+      }
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleExitAdmin = () => {
     if (typeof window !== 'undefined') {
-      if (window.location.pathname === '/admin' || window.location.pathname === '/admin/') {
-        window.history.pushState(null, '', '/');
-      }
-      if (window.location.hash === '#/admin') {
+      window.history.pushState(null, '', '/');
+      if (window.location.hash.startsWith('#/admin')) {
         window.location.hash = '';
       }
     }

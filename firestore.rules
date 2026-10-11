@@ -69,7 +69,7 @@ service cloud.firestore {
              data.gender in ['Men', 'Women', 'Kids', 'Unisex'] &&
              data.sku is string && data.sku.size() > 0 && data.sku.size() <= 100 &&
              data.stock is number && data.stock >= 0 &&
-             data.main_image is string && data.main_image.size() <= 2048 &&
+             data.main_image is string && data.main_image.size() <= 1048576 &&
              data.status in ['active', 'archived'];
     }
 
@@ -117,7 +117,8 @@ service cloud.firestore {
              data.phone_number is string && data.phone_number.size() > 0 && data.phone_number.size() <= 50 &&
              data.account_name is string && data.account_name.size() > 0 && data.account_name.size() <= 150 &&
              data.account_number is string && data.account_number.size() > 0 && data.account_number.size() <= 50 &&
-             (!('background_theme' in data) || data.background_theme in ['white', 'amber', 'emerald', 'sapphire', 'rose']);
+             (!('background_theme' in data) || data.background_theme in ['white', 'amber', 'emerald', 'sapphire', 'rose']) &&
+             (!('hero_background' in data) || data.hero_background in ['royal_emerald', 'burgundy_silk', 'midnight_sapphire', 'desert_gold', 'minimal_pearl']);
     }
 
     match /site_settings/{settingsId} {

@@ -353,7 +353,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
                     <img
                       src={item.product.main_image}
                       alt={item.product.name}
-                      className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0 border border-slate-200"
+                      className="w-14 h-14 rounded-xl object-contain p-0.5 bg-white shrink-0 border border-slate-200"
                     />
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-slate-900 truncate">{item.product.name}</h4>

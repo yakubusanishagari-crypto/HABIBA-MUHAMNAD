@@ -62,7 +62,7 @@
         "gender": { "type": "string", "enum": ["Men", "Women", "Kids", "Unisex"] },
         "sku": { "type": "string", "maxLength": 100 },
         "stock": { "type": "number" },
-        "main_image": { "type": "string", "maxLength": 2048 },
+        "main_image": { "type": "string", "maxLength": 1048576 },
         "images": { "type": "array" },
         "sizes": { "type": "array" },
         "colors": { "type": "array" },

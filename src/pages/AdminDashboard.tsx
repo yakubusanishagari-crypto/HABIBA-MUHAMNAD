@@ -151,15 +151,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
   // Product modal & state
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
-  const [productForm, setProductForm] = useState({
+  const [productForm, setProductForm] = useState<{
+    name: string;
+    slug: string;
+    description: string;
+    price: number | '';
+    discount_price: number | '';
+    category_id: string;
+    subcategory_id: string;
+    gender: Gender;
+    sku: string;
+    stock: number | '';
+    main_image: string;
+    images: string[];
+    sizes_text: string;
+    colors_text: string;
+    is_featured: boolean;
+    is_new_arrival: boolean;
+    status: 'active' | 'archived';
+  }>({
     name: '',
     slug: '',
     description: '',
-    price: 0,
-    discount_price: 0,
+    price: '',
+    discount_price: '',
     category_id: '',
     subcategory_id: '',
-    gender: 'Women' as Gender,
+    gender: 'Women',
     sku: '',
     stock: 10,
     main_image: '',
@@ -345,7 +363,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
       slug: p.slug,
       description: p.description,
       price: p.price,
-      discount_price: p.discount_price || 0,
+      discount_price: p.discount_price && p.discount_price > 0 ? p.discount_price : '',
       category_id: p.category_id,
       subcategory_id: p.subcategory_id || '',
       gender: p.gender,
@@ -370,8 +388,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
       name: '',
       slug: '',
       description: '',
-      price: 25000,
-      discount_price: 22000,
+      price: '', // Cleared so administrator can type price naturally without default zero interfering
+      discount_price: '',
       category_id: defaultCat,
       subcategory_id: '',
       gender: 'Women',
@@ -401,6 +419,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
       return;
     }
 
+    const parsedPrice = typeof productForm.price === 'string' ? parseFloat(productForm.price) : Number(productForm.price);
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      showToast('Please enter a valid product price greater than 0', 'error');
+      return;
+    }
+
+    const parsedDiscount = productForm.discount_price !== '' && productForm.discount_price !== undefined && productForm.discount_price !== null
+      ? (typeof productForm.discount_price === 'string' ? parseFloat(productForm.discount_price) : Number(productForm.discount_price))
+      : undefined;
+
+    if (parsedDiscount !== undefined && !isNaN(parsedDiscount) && parsedDiscount >= parsedPrice) {
+      showToast('Sale price must be lower than the original price', 'error');
+      return;
+    }
+
+    const parsedStock = typeof productForm.stock === 'string' ? parseInt(productForm.stock, 10) : Number(productForm.stock);
+    const finalStock = isNaN(parsedStock) || parsedStock < 0 ? 0 : parsedStock;
+
     const sizes = productForm.sizes_text
       .split(',')
       .map(s => s.trim())
@@ -421,14 +457,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
 
+    const effectivePrice = parsedDiscount && parsedDiscount > 0 ? parsedDiscount : parsedPrice;
     const generatedVariants = sizes.flatMap(s =>
       colors.map(c => ({
         id: `var-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         size: s,
         color: c,
         sku: `${productForm.sku}-${s}-${c.slice(0, 2).toUpperCase()}`,
-        stock: Math.max(1, Math.floor(productForm.stock / (sizes.length * colors.length || 1))),
-        price: productForm.discount_price || productForm.price
+        stock: Math.max(1, Math.floor(finalStock / (sizes.length * colors.length || 1))),
+        price: effectivePrice
       }))
     );
 
@@ -438,6 +475,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
         await updateProduct({
           ...existing,
           ...productForm,
+          price: parsedPrice,
+          discount_price: parsedDiscount && parsedDiscount > 0 ? parsedDiscount : undefined,
+          stock: finalStock,
           main_image,
           images,
           slug,
@@ -449,6 +489,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
     } else {
       await addProduct({
         ...productForm,
+        price: parsedPrice,
+        discount_price: parsedDiscount && parsedDiscount > 0 ? parsedDiscount : undefined,
+        stock: finalStock,
         main_image,
         images,
         slug,
@@ -1202,11 +1245,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
                             <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
                               {/* Photo Preview */}
                               <td className="p-4">
-                                <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 shrink-0">
+                                <div className="w-12 h-12 rounded-xl bg-white overflow-hidden border border-slate-200 shrink-0 flex items-center justify-center p-0.5">
                                   <img
                                     src={p.main_image || p.images?.[0]}
                                     alt={p.name}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-contain"
                                     onError={e => {
                                       (e.target as HTMLImageElement).src =
                                         'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=400&q=80';
@@ -1463,7 +1506,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
                                 <img
                                   src={item.product_image}
                                   alt=""
-                                  className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0"
+                                  className="w-10 h-10 rounded-lg object-contain p-0.5 bg-white border border-slate-200 shrink-0"
                                 />
                                 <div className="text-xs overflow-hidden">
                                   <p className="font-bold text-slate-800 truncate">{item.product_name}</p>
@@ -1717,7 +1760,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
                             <img
                               src={prod.main_image || prod.images?.[0]}
                               alt=""
-                              className="w-10 h-10 rounded-lg object-cover bg-slate-100 shrink-0"
+                              className="w-10 h-10 rounded-lg object-contain p-0.5 bg-white border border-slate-200 shrink-0"
                             />
                             <div>
                               <strong className="text-slate-900 block font-bold">{prod.name}</strong>
@@ -2432,9 +2475,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
                   <label className="font-bold text-slate-700 block mb-1">Default Delivery Fee (₦)</label>
                   <input
                     type="number"
-                    value={settingsForm.default_delivery_fee}
-                    onChange={e => setSettingsForm({ ...settingsForm, default_delivery_fee: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 font-bold"
+                    step="any"
+                    min="0"
+                    placeholder="e.g. 2500"
+                    value={settingsForm.default_delivery_fee === 0 ? '' : (settingsForm.default_delivery_fee ?? '')}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setSettingsForm({ ...settingsForm, default_delivery_fee: val === '' ? 0 : Number(val) });
+                    }}
+                    onFocus={e => {
+                      if (settingsForm.default_delivery_fee === 0) {
+                        e.target.select();
+                      }
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
 
@@ -2836,23 +2890,55 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
               {/* Price, Discount Price, Stock, SKU */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Original Price (₦)</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Original Price (₦) <span className="text-rose-500">*</span>
+                  </label>
                   <input
                     type="number"
+                    step="any"
+                    min="0"
+                    placeholder="e.g. 25000"
                     required
-                    value={productForm.price}
-                    onChange={e => setProductForm({ ...productForm, price: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold"
+                    value={productForm.price === '' ? '' : productForm.price}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setProductForm(prev => ({
+                        ...prev,
+                        price: val === '' ? '' : Number(val)
+                      }));
+                    }}
+                    onFocus={e => {
+                      if (productForm.price === 0) {
+                        e.target.select();
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">Sale Price (₦)</label>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Sale Price (₦) <span className="text-slate-400 font-normal text-xs">(optional)</span>
+                  </label>
                   <input
                     type="number"
-                    value={productForm.discount_price}
-                    onChange={e => setProductForm({ ...productForm, discount_price: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-emerald-800"
+                    step="any"
+                    min="0"
+                    placeholder="e.g. 22000"
+                    value={productForm.discount_price === '' ? '' : productForm.discount_price}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setProductForm(prev => ({
+                        ...prev,
+                        discount_price: val === '' ? '' : Number(val)
+                      }));
+                    }}
+                    onFocus={e => {
+                      if (productForm.discount_price === 0) {
+                        e.target.select();
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold text-emerald-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
 
@@ -2860,10 +2946,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
                   <label className="font-bold text-slate-700 block mb-1">Warehouse Stock</label>
                   <input
                     type="number"
+                    min="0"
+                    placeholder="10"
                     required
-                    value={productForm.stock}
-                    onChange={e => setProductForm({ ...productForm, stock: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold"
+                    value={productForm.stock === '' ? '' : productForm.stock}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setProductForm(prev => ({
+                        ...prev,
+                        stock: val === '' ? '' : Number(val)
+                      }));
+                    }}
+                    onFocus={e => {
+                      if (productForm.stock === 0) {
+                        e.target.select();
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
 
@@ -2873,7 +2972,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
                     type="text"
                     value={productForm.sku}
                     onChange={e => setProductForm({ ...productForm, sku: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
               </div>

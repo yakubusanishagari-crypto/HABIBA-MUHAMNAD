@@ -14,6 +14,10 @@
     margin: 0;
     padding: 0;
   }
+
+  img {
+    max-width: 100%;
+  }
 }
 
 /* Hardware accelerated layer promotion for scrolling performance */
@@ -22,11 +26,6 @@
   backface-visibility: hidden;
   perspective: 1000px;
   will-change: auto;
-}
-
-/* Image containment to avoid reflows and blank image flashes */
-img {
-  content-visibility: auto;
 }
 
 .font-serif-display {

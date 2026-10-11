@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, MessageCircle, MapPin, ShieldCheck, ArrowRight, Sparkles, Package, ShoppingBag, Mail } from 'lucide-react';
+import { Phone, MessageCircle, MapPin, ShieldCheck, ArrowRight, Sparkles, Package, ShoppingBag, Mail, Lock } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { createGeneralWhatsAppUrl } from '../utils/formatters';
 
@@ -221,6 +221,16 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <button onClick={() => handleNav('about')} className="hover:text-white transition-colors">
                   Our Mission & Values
+                </button>
+              </li>
+              <li className="pt-1.5 border-t border-slate-800/80">
+                <button
+                  onClick={() => handleNav('admin')}
+                  className="hover:text-amber-300 text-slate-400 font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer text-[11px]"
+                  title="Authorized Store Administrators & Staff Portal"
+                >
+                  <Lock className="w-3 h-3 text-amber-400/90" />
+                  <span>Admin / Staff Portal</span>
                 </button>
               </li>
             </ul>
