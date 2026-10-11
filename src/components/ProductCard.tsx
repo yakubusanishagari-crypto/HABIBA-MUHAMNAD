@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Eye, Sparkles, Heart, ArrowRight } from 'lucide-react';
+import { ShoppingBag, Eye, Heart, ArrowRight } from 'lucide-react';
 import { Product } from '../types';
 import { formatPrice } from '../utils/formatters';
 import { useShop } from '../context/ShopContext';
@@ -10,7 +10,7 @@ interface ProductCardProps {
   onViewProduct: (product: Product) => void;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewProduct }) => {
+export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onViewProduct }) => {
   const { addToCart, categories, wishlist, toggleWishlist, setQuickViewProduct, language, t } = useShop();
 
   const matchedCat = categories.find(c => c.id === product.category_id);
@@ -48,7 +48,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewProduct
   return (
     <div
       onClick={() => onViewProduct(product)}
-      className="group relative bg-white border border-slate-200/80 rounded-2xl overflow-hidden hover:border-slate-300 hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer"
+      className="group relative bg-white border border-slate-200/80 rounded-2xl overflow-hidden hover:border-slate-300 hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer transform-gpu"
     >
       {/* Image Container with Consistent Ratio */}
       <div className="relative aspect-4/5 bg-slate-100 overflow-hidden">
@@ -57,14 +57,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewProduct
           alt={product.name}
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
           loading="lazy"
+          decoding="async"
         />
 
         {/* Top Badges Left */}
         <div className="absolute top-3 left-3 flex flex-col gap-1 items-start z-10 pointer-events-none">
           {product.is_new_arrival && (
-            <span className="bg-slate-950 text-white text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow-xs flex items-center gap-1">
-              <Sparkles className="w-2.5 h-2.5 text-amber-300" />
-              <span>NEW</span>
+            <span className="bg-slate-950 text-white text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow-xs">
+              NEW
             </span>
           )}
           {hasDiscount && (
@@ -179,4 +179,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewProduct
       </div>
     </div>
   );
-};
+});
+
+ProductCard.displayName = 'ProductCard';

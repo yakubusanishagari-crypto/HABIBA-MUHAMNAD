@@ -86,7 +86,6 @@ export const PromotionalBanner: React.FC<PromotionalBannerProps> = ({
                 </div>
                 <span className="text-slate-600">•</span>
                 <div className="flex items-center gap-1.5 text-amber-200">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                   <span>{language === 'ha' ? 'Sabbin Zubi na 2026' : language === 'ar' ? 'أحدث موديلات 2026' : 'New Season Drops'}</span>
                 </div>
               </div>
@@ -109,7 +108,6 @@ export const PromotionalBanner: React.FC<PromotionalBannerProps> = ({
                   onClick={onExploreNewArrivals}
                   className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white rounded-2xl font-bold text-xs uppercase tracking-wider backdrop-blur-md transition-colors cursor-pointer"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                   <span>{t.navNewArrivals || 'EXPLORE NEW ARRIVALS'}</span>
                 </button>
               )}

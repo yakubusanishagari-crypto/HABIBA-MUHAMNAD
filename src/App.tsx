@@ -99,18 +99,33 @@ const AppContent: React.FC = () => {
   };
 
   const themeBackgroundClass = React.useMemo(() => {
-    switch (settings.background_theme) {
+    const activeTheme = settings.background_theme || (typeof window !== 'undefined' ? localStorage.getItem('habeevat_background_theme') as any : null) || 'white';
+    switch (activeTheme) {
       case 'amber':
-        return 'bg-amber-50/70 text-slate-900';
+        return 'bg-amber-50/80 text-slate-900';
       case 'emerald':
-        return 'bg-emerald-50/50 text-slate-900';
+        return 'bg-emerald-50/70 text-slate-900';
       case 'sapphire':
         return 'bg-slate-950 text-slate-100';
       case 'rose':
-        return 'bg-rose-50/60 text-slate-900';
+        return 'bg-rose-50/70 text-slate-900';
       case 'white':
       default:
         return 'bg-white text-slate-900';
+    }
+  }, [settings.background_theme]);
+
+  React.useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const activeTheme = settings.background_theme || (localStorage.getItem('habeevat_background_theme') as any) || 'white';
+      const bgHexMap: Record<string, string> = {
+        white: '#ffffff',
+        amber: '#fffbeb',
+        emerald: '#ecfdf5',
+        sapphire: '#020617',
+        rose: '#fff1f2'
+      };
+      document.body.style.backgroundColor = bgHexMap[activeTheme] || '#ffffff';
     }
   }, [settings.background_theme]);
 
@@ -244,10 +259,10 @@ const AppContent: React.FC = () => {
 
         {currentView === 'admin' && <AdminDashboard onExitToStore={handleExitAdmin} />}
 
-        {currentView === 'privacy' && <LegalPages type="privacy" />}
-        {currentView === 'terms' && <LegalPages type="terms" />}
-        {currentView === 'returns' && <LegalPages type="returns" />}
-        {currentView === 'shipping' && <LegalPages type="shipping" />}
+        {currentView === 'privacy' && <LegalPages type="privacy" onNavigate={setCurrentView} />}
+        {currentView === 'terms' && <LegalPages type="terms" onNavigate={setCurrentView} />}
+        {currentView === 'returns' && <LegalPages type="returns" onNavigate={setCurrentView} />}
+        {currentView === 'shipping' && <LegalPages type="shipping" onNavigate={setCurrentView} />}
       </main>
 
       {/* Footer (No payment account details) */}

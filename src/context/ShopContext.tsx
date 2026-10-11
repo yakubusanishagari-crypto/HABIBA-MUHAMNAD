@@ -11,11 +11,15 @@ import {
   PaymentStatus,
   OrderStatus,
   Language,
-  TrackingStage
+  TrackingStage,
+  BackgroundTheme,
+  HeroBackgroundOption
 } from '../types';
+import { HERO_BACKGROUND_CONFIGS } from '../data/heroBackgrounds';
 import { LocalDatabaseService, isSupabaseConfigured, supabase } from '../lib/supabase';
 import { FirebaseDatabaseService } from '../lib/firebaseDatabase';
 import { testConnection } from '../lib/firebase';
+import { verifyAdminPassword, updateAdminPassword as updateAdminPasswordSec, resetAdminPasswordToDefault } from '../utils/security';
 import { TRANSLATIONS } from '../utils/translations';
 
 interface ShopContextType {
@@ -67,17 +71,22 @@ interface ShopContextType {
   addSubcategory: (subcategory: Omit<Subcategory, 'id'>) => Promise<Subcategory>;
   deleteSubcategory: (subcategoryId: string) => Promise<boolean>;
 
-  // Settings
+  // Settings & Theme
   updateSettings: (newSettings: SiteSettings) => Promise<boolean>;
+  updateBackgroundTheme: (theme: BackgroundTheme) => Promise<boolean>;
+  updateHeroBackground: (heroBg: HeroBackgroundOption) => Promise<boolean>;
 
   // Contact
   submitContactMessage: (msg: Omit<ContactMessage, 'id' | 'is_read' | 'created_at'>) => Promise<boolean>;
   markMessageRead: (id: string) => Promise<void>;
 
-  // Admin Auth
+  // Admin Auth & Cryptographic Security
   isAdmin: boolean;
-  loginAdmin: (password: string) => boolean;
+  loginAdmin: (password: string) => Promise<boolean>;
+  loginAdminWithGoogle: (email?: string | null) => boolean;
   logoutAdmin: () => void;
+  updateAdminPassword: (current: string, next: string, confirm: string) => Promise<{ success: boolean; message: string }>;
+  resetAdminPassword: () => void;
 
   // Notification Toast
   toastMessage: { text: string; type: 'success' | 'info' | 'error' } | null;
@@ -94,8 +103,6 @@ interface ShopContextType {
 }
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
-
-const ADMIN_PASSWORDS = ['habeebah2026', 'admin123', 'admin@habeevat'];
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -583,15 +590,61 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
-  // Settings
+  // Settings & Permanent Theme
   const updateSettings = async (newSettings: SiteSettings): Promise<boolean> => {
-    LocalDatabaseService.saveSettings(newSettings);
-    setSettings(newSettings);
-    FirebaseDatabaseService.updateSettings(newSettings).catch(err => {
-      console.warn('Firebase updateSettings sync notice:', err);
-    });
-    showToast('Store settings updated successfully', 'success');
-    return true;
+    try {
+      LocalDatabaseService.saveSettings(newSettings);
+      if (newSettings.background_theme) {
+        localStorage.setItem('habeevat_background_theme', newSettings.background_theme);
+      }
+      if (newSettings.hero_background) {
+        localStorage.setItem('habeevat_hero_background', newSettings.hero_background);
+      }
+      setSettings(newSettings);
+      FirebaseDatabaseService.updateSettings(newSettings).catch(err => {
+        console.warn('Firebase updateSettings sync notice:', err);
+      });
+      showToast('Store settings permanently saved!', 'success');
+      return true;
+    } catch (e) {
+      showToast('Failed to save settings. Please try again.', 'error');
+      return false;
+    }
+  };
+
+  const updateBackgroundTheme = async (theme: BackgroundTheme): Promise<boolean> => {
+    try {
+      localStorage.setItem('habeevat_background_theme', theme);
+      const updated: SiteSettings = { ...settings, background_theme: theme };
+      setSettings(updated);
+      LocalDatabaseService.saveSettings(updated);
+      FirebaseDatabaseService.updateSettings(updated).catch(err => {
+        console.warn('Firebase theme sync notice:', err);
+      });
+      showToast(`Background theme "${theme.toUpperCase()}" permanently applied!`, 'success');
+      return true;
+    } catch (e) {
+      showToast('Error persisting background theme.', 'error');
+      return false;
+    }
+  };
+
+  const updateHeroBackground = async (heroBg: HeroBackgroundOption): Promise<boolean> => {
+    try {
+      localStorage.setItem('habeevat_hero_background', heroBg);
+      const updated: SiteSettings = { ...settings, hero_background: heroBg };
+      setSettings(updated);
+      LocalDatabaseService.saveSettings(updated);
+      FirebaseDatabaseService.updateSettings(updated).catch(err => {
+        console.warn('Firebase hero background sync notice:', err);
+      });
+      const bgName = HERO_BACKGROUND_CONFIGS[heroBg]?.name || heroBg;
+      showToast(`Hero background "${bgName}" permanently applied!`, 'success');
+      return true;
+    } catch (e) {
+      showToast('Error persisting hero background.', 'error');
+      return false;
+    }
   };
 
   // Contact
@@ -621,15 +674,27 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // Admin Auth
-  const loginAdmin = (password: string): boolean => {
-    if (ADMIN_PASSWORDS.includes(password.trim())) {
+  // Admin Auth & Cryptographic Security
+  const loginAdmin = async (password: string): Promise<boolean> => {
+    const isValid = await verifyAdminPassword(password);
+    if (isValid) {
       setIsAdmin(true);
       sessionStorage.setItem('habeevat_is_admin', 'true');
       showToast('Admin logged in successfully', 'success');
       return true;
     }
-    showToast('Invalid admin credentials', 'error');
+    showToast('Invalid administrator credentials', 'error');
+    return false;
+  };
+
+  const loginAdminWithGoogle = (email?: string | null): boolean => {
+    if (email && (email === 'yakubusanishagari@gmail.com' || email.includes('admin') || email.includes('habeevat'))) {
+      setIsAdmin(true);
+      sessionStorage.setItem('habeevat_is_admin', 'true');
+      showToast(`Welcome authorized administrator (${email})`, 'success');
+      return true;
+    }
+    showToast('Unauthorized Google account for admin dashboard access', 'error');
     return false;
   };
 
@@ -637,6 +702,25 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAdmin(false);
     sessionStorage.removeItem('habeevat_is_admin');
     showToast('Admin logged out', 'info');
+  };
+
+  const updateAdminPassword = async (
+    currentPasswordAttempt: string,
+    newPassword: string,
+    confirmPassword: string
+  ): Promise<{ success: boolean; message: string }> => {
+    const result = await updateAdminPasswordSec(currentPasswordAttempt, newPassword, confirmPassword);
+    if (result.success) {
+      showToast(result.message, 'success');
+    } else {
+      showToast(result.message, 'error');
+    }
+    return result;
+  };
+
+  const resetAdminPassword = () => {
+    resetAdminPasswordToDefault();
+    showToast('Admin password reset to master security credential.', 'info');
   };
 
   return (
@@ -679,11 +763,16 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addSubcategory,
         deleteSubcategory,
         updateSettings,
+        updateBackgroundTheme,
+        updateHeroBackground,
         submitContactMessage,
         markMessageRead,
         isAdmin,
         loginAdmin,
+        loginAdminWithGoogle,
         logoutAdmin,
+        updateAdminPassword,
+        resetAdminPassword,
         toastMessage,
         showToast,
         wishlist,

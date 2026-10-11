@@ -30,11 +30,14 @@ import {
   ArrowUpRight,
   Filter,
   Eye,
+  EyeOff,
+  Lock,
+  Key,
   LogOut,
   Menu,
   X,
   Phone,
-  Sparkles,
+  Layout,
   RefreshCw,
   SlidersHorizontal,
   ChevronRight,
@@ -53,8 +56,10 @@ import {
   OrderStatus,
   Gender,
   TrackingStage,
-  BackgroundTheme
+  BackgroundTheme,
+  HeroBackgroundOption
 } from '../types';
+import { HERO_BACKGROUND_LIST, HERO_BACKGROUND_CONFIGS } from '../data/heroBackgrounds';
 import { formatPrice, copyToClipboard } from '../utils/formatters';
 import { downloadOrderReceiptPDF } from '../utils/pdfReceipt';
 import { ProductImageUploader } from '../components/ProductImageUploader';
@@ -96,6 +101,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
     settings,
     isAdmin,
     loginAdmin,
+    loginAdminWithGoogle,
     logoutAdmin,
     addProduct,
     updateProduct,
@@ -109,6 +115,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
     updatePaymentStatus,
     updateOrderTrackingStage,
     updateSettings,
+    updateBackgroundTheme,
+    updateHeroBackground,
+    updateAdminPassword,
+    resetAdminPassword,
     markMessageRead,
     showToast
   } = useShop();
@@ -118,7 +128,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
 
   // Login form state
   const [passwordInput, setPasswordInput] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [loginError, setLoginError] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  // Hero Background preview state
+  const [previewHeroBg, setPreviewHeroBg] = useState<HeroBackgroundOption>(
+    settings.hero_background || 'royal_emerald'
+  );
+  const [isSavingHeroBg, setIsSavingHeroBg] = useState(false);
+
+  // Security Form State
+  const [currentPwd, setCurrentPwd] = useState('');
+  const [newPwd, setNewPwd] = useState('');
+  const [confirmPwd, setConfirmPwd] = useState('');
+  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [isChangingPwd, setIsChangingPwd] = useState(false);
+  const [pwdFeedback, setPwdFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Product modal & state
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -189,6 +217,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
   // Sync settings when loaded
   React.useEffect(() => {
     setSettingsForm({ ...settings });
+    if (settings.hero_background) {
+      setPreviewHeroBg(settings.hero_background);
+    }
   }, [settings]);
 
   // Statistics Calculations (100% Real Database Calculations)
@@ -454,7 +485,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
   // Save Settings
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    await updateSettings(settingsForm);
+    await updateSettings({ ...settingsForm, hero_background: previewHeroBg });
   };
 
   // Category creation
@@ -554,11 +585,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
           </div>
 
           <form
-            onSubmit={e => {
+            onSubmit={async e => {
               e.preventDefault();
-              const ok = loginAdmin(passwordInput);
-              if (!ok) {
+              if (isLoggingIn) return;
+              setIsLoggingIn(true);
+              setLoginError(false);
+              try {
+                const ok = await loginAdmin(passwordInput);
+                if (!ok) {
+                  setLoginError(true);
+                }
+              } catch (err) {
                 setLoginError(true);
+              } finally {
+                setIsLoggingIn(false);
               }
             }}
             className="space-y-4"
@@ -567,9 +607,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
               <label className="text-xs font-extrabold text-slate-700 block mb-1">
                 Administrator Access Key
               </label>
-              <div className="relative">
+              <div className="relative flex items-center">
                 <input
-                  type="password"
+                  type={showLoginPassword ? 'text' : 'password'}
                   required
                   value={passwordInput}
                   onChange={e => {
@@ -577,34 +617,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
                     setLoginError(false);
                   }}
                   placeholder="Enter administrator password"
-                  className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none transition-all ${
+                  autoComplete="current-password"
+                  className={`w-full pl-4 pr-11 py-3 rounded-xl border text-sm focus:outline-none transition-all ${
                     loginError
                       ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/30'
                       : 'border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20'
                   }`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  className="absolute right-3 text-slate-400 hover:text-slate-600 p-1 cursor-pointer focus:outline-none"
+                  title={showLoginPassword ? 'Hide password' : 'Show password'}
+                  tabIndex={-1}
+                >
+                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
 
               {loginError && (
-                <p className="text-xs text-rose-600 font-bold mt-1.5">
-                  Incorrect administrator password. Please verify and try again.
+                <p className="text-xs text-rose-600 font-bold mt-1.5 flex items-center gap-1.5 animate-in fade-in duration-200">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Incorrect administrator password. Please verify and try again.</span>
                 </p>
               )}
-
-              <div className="mt-2.5 p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/80 flex items-center justify-between text-xs">
-                <span className="text-amber-900 font-medium">Demo Access Key:</span>
-                <code className="font-mono font-black text-emerald-800 bg-white px-2 py-0.5 rounded border border-amber-300">
-                  habeebah2026
-                </code>
-              </div>
             </div>
 
             <button
               type="submit"
-              className="w-full py-3.5 bg-gradient-to-r from-emerald-700 via-emerald-800 to-emerald-900 hover:from-emerald-600 hover:to-emerald-800 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-emerald-900/30 transition-all cursor-pointer flex items-center justify-center gap-2"
+              disabled={isLoggingIn}
+              className="w-full py-3.5 bg-gradient-to-r from-emerald-700 via-emerald-800 to-emerald-900 hover:from-emerald-600 hover:to-emerald-800 disabled:opacity-70 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-emerald-900/30 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
-              <ShieldCheck className="w-4 h-4" />
-              <span>ACCESS ADMIN DASHBOARD</span>
+              {isLoggingIn ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-amber-300" />
+                  <span>AUTHENTICATING...</span>
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="w-4 h-4 text-amber-300" />
+                  <span>ACCESS ADMIN DASHBOARD</span>
+                </>
+              )}
             </button>
 
             <div className="relative my-4">
@@ -621,7 +675,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
               onClick={async () => {
                 const user = await signInWithGoogle();
                 if (user) {
-                  loginAdmin('habeebah2026');
+                  loginAdminWithGoogle(user.email);
                 }
               }}
               className="w-full py-3 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs rounded-xl border border-slate-300 shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
@@ -985,7 +1039,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
                 {/* Right 1 Col: Quick Shortcuts & Health */}
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
                   <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <SlidersHorizontal className="w-4 h-4 text-emerald-700" />
                     <h3 className="text-sm font-extrabold text-slate-900">Operations Hub</h3>
                   </div>
 
@@ -1977,7 +2031,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
           {/* TAB 9: STORE SETTINGS & BACKGROUND THEMES */}
           {/* ================================================================= */}
           {activeTab === 'settings' && (
-            <div className="max-w-3xl bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs space-y-6">
+            <div className="space-y-6">
+              <div className="max-w-3xl bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs space-y-6">
               <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-black text-slate-900">
@@ -1989,17 +2044,253 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
                 </div>
               </div>
 
-              <form onSubmit={handleSaveSettings} className="space-y-5 text-xs">
-                {/* 1. BACKGROUND COLOUR THEME OPTIONS */}
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Palette className="w-4 h-4 text-emerald-700" />
-                    <span className="font-bold text-slate-900 uppercase tracking-wider block">
-                      Website Background Theme
+              <form onSubmit={handleSaveSettings} className="space-y-6 text-xs">
+                {/* 1. HERO SECTION BACKGROUND CUSTOMIZATION (5 PRESTIGE OPTIONS WITH LIVE PREVIEW) */}
+                <div className="p-5 bg-gradient-to-br from-slate-50 via-white to-slate-50 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-200">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-700">
+                        <Layout className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-slate-900 text-sm uppercase tracking-wider block">
+                          Hero Section Background Customization
+                        </span>
+                        <p className="text-[11px] text-slate-500">
+                          Select from 5 premium curated backdrops for the home page hero section.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-950 font-black text-[10px] uppercase tracking-wider border border-emerald-300/50">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+                        <span>Active: {HERO_BACKGROUND_CONFIGS[settings.hero_background || 'royal_emerald']?.name || 'Royal Emerald & Gold'}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 5 Distinct Aesthetic Background Option Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    {HERO_BACKGROUND_LIST.map(opt => {
+                      const isSelected = previewHeroBg === opt.id;
+                      const isCurrentLive = (settings.hero_background || 'royal_emerald') === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setPreviewHeroBg(opt.id);
+                            setSettingsForm(prev => ({ ...prev, hero_background: opt.id }));
+                          }}
+                          className={`group text-left p-3.5 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between ${
+                            isSelected
+                              ? 'ring-2 ring-amber-500 border-amber-500 bg-white shadow-md'
+                              : 'border-slate-200/90 bg-white/90 hover:border-slate-300 hover:shadow-xs'
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-900 text-amber-300">
+                                {opt.badge}
+                              </span>
+                              {isCurrentLive && (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                  <Check className="w-2.5 h-2.5 text-emerald-600" /> Live
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Color Palette Swatch Bar */}
+                            <div className={`h-10 w-full rounded-xl bg-gradient-to-r ${opt.swatchGradient} ${opt.borderClass} border shadow-inner mb-2.5 relative overflow-hidden flex items-center justify-between px-2.5`}>
+                              <div className="w-3.5 h-3.5 rounded-full bg-amber-400/30 blur-xs" />
+                              <div className="w-2.5 h-2.5 rounded-full bg-amber-400/80 shadow-xs" />
+                            </div>
+
+                            <span className="font-extrabold text-slate-950 block text-xs leading-tight mb-1">
+                              {opt.name}
+                            </span>
+                            <p className="text-[10px] text-slate-500 leading-relaxed">
+                              {opt.desc}
+                            </p>
+                          </div>
+
+                          <div className="pt-2 mt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold">
+                            <span className={isSelected ? 'text-amber-700' : 'text-slate-400'}>
+                              {isSelected ? '✓ Selected' : 'Click to preview'}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* LIVE INTERACTIVE PREVIEW BOX */}
+                  <div className="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <Eye className="w-4 h-4 text-emerald-700" />
+                        <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">
+                          Live Hero Banner Preview
+                        </h4>
+                        <span className="text-[10px] text-slate-500">
+                          (Interactive mock preview of how visitors see your hero section)
+                        </span>
+                      </div>
+
+                      <div className="text-[11px] font-semibold text-slate-700 flex items-center gap-2">
+                        <span>Selected Backdrop:</span>
+                        <strong className="text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md font-extrabold">
+                          {HERO_BACKGROUND_CONFIGS[previewHeroBg]?.name}
+                        </strong>
+                        {previewHeroBg !== (settings.hero_background || 'royal_emerald') && (
+                          <span className="text-amber-600 text-[10px] font-bold animate-pulse">
+                            (Unsaved Changes)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Scaled Realistic Hero Mock Window */}
+                    {(() => {
+                      const cfg = HERO_BACKGROUND_CONFIGS[previewHeroBg] || HERO_BACKGROUND_CONFIGS.royal_emerald;
+                      return (
+                        <div className={`relative overflow-hidden ${cfg.gradientClass} rounded-2xl p-4 sm:p-6 border ${cfg.borderClass} text-white shadow-inner transition-colors duration-500`}>
+                          {/* Glow Orbs */}
+                          <div className={`absolute top-0 right-1/4 -mt-10 w-44 h-44 rounded-full ${cfg.orb1Class} blur-2xl pointer-events-none`} />
+                          <div className={`absolute bottom-0 left-6 -mb-10 w-44 h-44 rounded-full ${cfg.orb2Class} blur-2xl pointer-events-none`} />
+
+                          {/* Subtle geometric pattern overlay */}
+                          <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none opacity-60" />
+
+                          <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                            {/* Left Copy Mockup */}
+                            <div className="md:col-span-8 space-y-2.5 text-left">
+                              {/* Brand pill */}
+                              <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${cfg.kickerBgClass} text-[9.5px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md`}>
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                                <span className="text-amber-300">HABEEVATUSSUNNAH</span>
+                                <span className="opacity-40">|</span>
+                                <span className="text-white/90">NIGERIA'S PREMIER ONLINE BOUTIQUE</span>
+                              </div>
+
+                              <div>
+                                <h3 className="text-lg sm:text-2xl font-black text-white leading-tight tracking-tight">
+                                  CURATED FASHION &{' '}
+                                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 font-serif italic">
+                                    TIMELESS ELEGANCE.
+                                  </span>
+                                </h3>
+                                <p className={`text-xs ${cfg.subtextColor} max-w-lg mt-1 leading-relaxed`}>
+                                  Discover refined modest wear, contemporary dresses, tailored men apparel, and luxury lifestyle essentials delivered directly to your doorstep across Nigeria.
+                                </p>
+                              </div>
+
+                              {/* Buttons */}
+                              <div className="flex flex-wrap items-center gap-2 pt-1">
+                                <span className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black text-[10px] uppercase tracking-wider shadow-sm flex items-center gap-1.5">
+                                  SHOP NOW <ArrowUpRight className="w-3.5 h-3.5" />
+                                </span>
+                                <span className="px-3 py-1.5 rounded-lg bg-white/10 border border-white/25 text-white font-black text-[10px] uppercase tracking-wider backdrop-blur-xs">
+                                  EXPLORE COLLECTION
+                                </span>
+                              </div>
+
+                              {/* Trust Highlights */}
+                              <div className="grid grid-cols-4 gap-1.5 pt-1.5">
+                                {[
+                                  { title: 'Nationwide', sub: 'Fast Nigeria delivery' },
+                                  { title: 'Quality', sub: '100% Inspected' },
+                                  { title: 'OPAY Bank', sub: 'Smooth checkout' },
+                                  { title: 'WhatsApp', sub: 'Instant confirmation' }
+                                ].map((tItem, tIdx) => (
+                                  <div key={tIdx} className={`p-1.5 rounded-xl ${cfg.cardBgClass} border text-[9px] backdrop-blur-xs`}>
+                                    <span className="font-extrabold text-amber-300 block leading-tight">{tItem.title}</span>
+                                    <span className="text-[8px] text-white/70 block truncate">{tItem.sub}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Right Image Mockup */}
+                            <div className="md:col-span-4 flex justify-center md:justify-end">
+                              <div className="relative w-32 sm:w-40 aspect-4/5 rounded-2xl overflow-hidden border-2 border-amber-400/60 shadow-xl bg-slate-900">
+                                <img
+                                  src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=400&q=80"
+                                  alt="Preview Collection"
+                                  className="w-full h-full object-cover object-top"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+                                <div className={`absolute bottom-2 left-2 right-2 p-1.5 rounded-xl ${cfg.cardBgClass} backdrop-blur-md border border-amber-400/40 text-[9px]`}>
+                                  <span className="text-[8px] font-black uppercase text-amber-300 block">HABEEVATUSSUNNAH</span>
+                                  <span className="font-extrabold text-white block">Ready-To-Wear</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Explicit Apply & Reset Action Controls */}
+                  <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={isSavingHeroBg}
+                        onClick={async () => {
+                          setIsSavingHeroBg(true);
+                          setSettingsForm(prev => ({ ...prev, hero_background: previewHeroBg }));
+                          await updateHeroBackground(previewHeroBg);
+                          setIsSavingHeroBg(false);
+                        }}
+                        className="px-5 py-2.5 bg-emerald-800 hover:bg-emerald-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                      >
+                        <Save className="w-4 h-4 text-amber-300" />
+                        <span>
+                          {isSavingHeroBg ? 'Applying & Saving...' : 'Apply & Save Hero Background'}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setPreviewHeroBg('royal_emerald');
+                          setSettingsForm(prev => ({ ...prev, hero_background: 'royal_emerald' }));
+                          await updateHeroBackground('royal_emerald');
+                        }}
+                        className="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 transition-colors flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Reset to Royal Emerald (Signature)</span>
+                      </button>
+                    </div>
+
+                    <span className="text-[11px] text-slate-500 italic">
+                      Persistent: Saved in database and remains active across reloads.
                     </span>
                   </div>
+                </div>
+
+                {/* 2. BACKGROUND COLOUR THEME OPTIONS */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Palette className="w-4 h-4 text-emerald-700" />
+                      <span className="font-bold text-slate-900 uppercase tracking-wider block">
+                        Website Background Theme
+                      </span>
+                    </div>
+
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 font-extrabold text-[10px] uppercase tracking-wider">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      <span>Active: {settings.background_theme?.toUpperCase() || 'WHITE'}</span>
+                    </span>
+                  </div>
+
                   <p className="text-slate-500 text-[11px]">
-                    Select a theme option to visibly change the store canvas. Persists after refresh.
+                    Select a theme to permanently change the store canvas. Settings persist across page refreshes, devices, and sessions.
                   </p>
 
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
@@ -2013,7 +2304,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
                       <button
                         key={theme.id}
                         type="button"
-                        onClick={() => setSettingsForm({ ...settingsForm, background_theme: theme.id })}
+                        onClick={() => {
+                          setSettingsForm({ ...settingsForm, background_theme: theme.id });
+                          updateBackgroundTheme(theme.id);
+                        }}
                         className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${
                           settingsForm.background_theme === theme.id
                             ? 'ring-2 ring-emerald-600 border-emerald-600 bg-white shadow-sm'
@@ -2025,6 +2319,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
                         <span className="text-[10px] text-slate-400 block">{theme.desc}</span>
                       </button>
                     ))}
+                  </div>
+
+                  {/* Explicit Save & Reset Theme Controls */}
+                  <div className="pt-2 flex flex-wrap items-center gap-2 border-t border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => updateBackgroundTheme(settingsForm.background_theme || 'white')}
+                      className="px-4 py-2 bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Save className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Confirm & Save Theme</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSettingsForm({ ...settingsForm, background_theme: 'white' });
+                        updateBackgroundTheme('white');
+                      }}
+                      className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 transition-colors flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Reset Theme to Default</span>
+                    </button>
                   </div>
                 </div>
 
@@ -2129,7 +2447,238 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
                 </button>
               </form>
             </div>
-          )}
+
+            {/* Dedicated Admin Security & Password Settings Section */}
+            <div className="max-w-3xl bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs space-y-6 mt-6">
+              <div className="pb-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-800 to-amber-500 flex items-center justify-center text-white shadow-md shadow-emerald-900/20">
+                    <Lock className="w-5 h-5 text-amber-200" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                      <span>Admin Security & Password Settings</span>
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Manage administrator authentication, salted SHA-256 cryptographic credentials, and access recovery.
+                    </p>
+                  </div>
+                </div>
+
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px] uppercase tracking-wider self-start sm:self-auto">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>SHA-256 Salted Hashing</span>
+                </span>
+              </div>
+
+              {/* Status & Feedback Alert */}
+              {pwdFeedback && (
+                <div
+                  className={`p-4 rounded-2xl border text-xs flex items-start gap-3 animate-in fade-in duration-200 ${
+                    pwdFeedback.type === 'success'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                      : 'bg-rose-50 border-rose-300 text-rose-900'
+                  }`}
+                >
+                  {pwdFeedback.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1 font-semibold leading-relaxed">
+                    {pwdFeedback.message}
+                  </div>
+                </div>
+              )}
+
+              <form
+                onSubmit={async e => {
+                  e.preventDefault();
+                  if (isChangingPwd) return;
+                  setPwdFeedback(null);
+
+                  if (!currentPwd.trim()) {
+                    setPwdFeedback({ type: 'error', message: 'Please enter your current administrator password.' });
+                    return;
+                  }
+                  if (newPwd.trim().length < 8) {
+                    setPwdFeedback({ type: 'error', message: 'New password must be at least 8 characters long.' });
+                    return;
+                  }
+                  if (newPwd !== confirmPwd) {
+                    setPwdFeedback({ type: 'error', message: 'The new password and confirmation password do not match.' });
+                    return;
+                  }
+
+                  setIsChangingPwd(true);
+                  try {
+                    const result = await updateAdminPassword(currentPwd, newPwd, confirmPwd);
+                    if (result.success) {
+                      setPwdFeedback({ type: 'success', message: result.message });
+                      setCurrentPwd('');
+                      setNewPwd('');
+                      setConfirmPwd('');
+                    } else {
+                      setPwdFeedback({ type: 'error', message: result.message });
+                    }
+                  } catch (err) {
+                    setPwdFeedback({ type: 'error', message: 'Failed to update password due to a cryptographic error.' });
+                  } finally {
+                    setIsChangingPwd(false);
+                  }
+                }}
+                className="space-y-4 text-xs"
+              >
+                {/* 1. Current Password */}
+                <div>
+                  <label className="font-extrabold text-slate-700 block mb-1">
+                    Current Administrator Password <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type={showCurrentPwd ? 'text' : 'password'}
+                      required
+                      value={currentPwd}
+                      onChange={e => setCurrentPwd(e.target.value)}
+                      placeholder="Enter active administrator password"
+                      autoComplete="current-password"
+                      className="w-full pl-3.5 pr-11 py-2.5 rounded-xl border border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium text-slate-900"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPwd(!showCurrentPwd)}
+                      className="absolute right-3 text-slate-400 hover:text-slate-600 p-1 cursor-pointer focus:outline-none"
+                      title={showCurrentPwd ? 'Hide password' : 'Show password'}
+                      tabIndex={-1}
+                    >
+                      {showCurrentPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* 2. New Password */}
+                  <div>
+                    <label className="font-extrabold text-slate-700 block mb-1">
+                      New Administrator Password <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <input
+                        type={showNewPwd ? 'text' : 'password'}
+                        required
+                        value={newPwd}
+                        onChange={e => setNewPwd(e.target.value)}
+                        placeholder="Minimum 8 characters"
+                        autoComplete="new-password"
+                        className="w-full pl-3.5 pr-11 py-2.5 rounded-xl border border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium text-slate-900"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPwd(!showNewPwd)}
+                        className="absolute right-3 text-slate-400 hover:text-slate-600 p-1 cursor-pointer focus:outline-none"
+                        title={showNewPwd ? 'Hide password' : 'Show password'}
+                        tabIndex={-1}
+                      >
+                        {showNewPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {newPwd && newPwd.length < 8 && (
+                      <span className="text-[11px] text-amber-600 font-bold mt-1 block">
+                        Must be at least 8 characters ({newPwd.length}/8)
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 3. Confirm New Password */}
+                  <div>
+                    <label className="font-extrabold text-slate-700 block mb-1">
+                      Confirm New Password <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <input
+                        type={showConfirmPwd ? 'text' : 'password'}
+                        required
+                        value={confirmPwd}
+                        onChange={e => setConfirmPwd(e.target.value)}
+                        placeholder="Re-enter new password"
+                        autoComplete="new-password"
+                        className={`w-full pl-3.5 pr-11 py-2.5 rounded-xl border text-sm font-medium text-slate-900 ${
+                          confirmPwd && confirmPwd !== newPwd
+                            ? 'border-rose-400 bg-rose-50/20'
+                            : 'border-slate-300 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20'
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPwd(!showConfirmPwd)}
+                        className="absolute right-3 text-slate-400 hover:text-slate-600 p-1 cursor-pointer focus:outline-none"
+                        title={showConfirmPwd ? 'Hide password' : 'Show password'}
+                        tabIndex={-1}
+                      >
+                        {showConfirmPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {confirmPwd && confirmPwd === newPwd && (
+                      <span className="text-[11px] text-emerald-600 font-bold mt-1 flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Passwords match
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Security Action Buttons */}
+                <div className="pt-3 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100">
+                  <button
+                    type="submit"
+                    disabled={isChangingPwd}
+                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-800 to-emerald-950 hover:from-emerald-700 hover:to-emerald-900 disabled:opacity-60 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {isChangingPwd ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin text-amber-300" />
+                        <span>UPDATING SECURE HASH...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Key className="w-4 h-4 text-amber-300" />
+                        <span>UPDATE ADMINISTRATOR PASSWORD</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to restore the default administrator password? This resets the authentication hash.')) {
+                        resetAdminPassword();
+                        setCurrentPwd('');
+                        setNewPwd('');
+                        setConfirmPwd('');
+                        setPwdFeedback({
+                          type: 'success',
+                          message: 'Administrator password successfully reset to default master credential.'
+                        });
+                      }
+                    }}
+                    className="w-full sm:w-auto px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Reset to Default Master Password</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Informational Security Callout */}
+              <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/70 text-[11px] text-amber-900 leading-relaxed flex items-start gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="font-bold text-amber-950 block">Cryptographic Protection Standards:</strong>
+                  Passwords are processed exclusively through salted SHA-256 Web Cryptography digests. Plain-text passwords are never stored in the database, local storage, logs, or network payloads.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
           {/* ================================================================= */}
           {/* TAB 10: SUPABASE ARCHITECTURE */}

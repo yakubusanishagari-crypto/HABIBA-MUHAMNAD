@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ProductCard } from '../components/ProductCard';
 import { useShop } from '../context/ShopContext';
 import { Product, SortOption } from '../types';
-import { Filter, SlidersHorizontal, RotateCcw, Search, ChevronDown, Sparkles } from 'lucide-react';
+import { Filter, SlidersHorizontal, RotateCcw, Search, ChevronDown } from 'lucide-react';
 
 interface ProductsPageProps {
   onViewProduct: (product: Product) => void;

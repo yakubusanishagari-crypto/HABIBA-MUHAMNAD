@@ -32,8 +32,22 @@ export class LocalDatabaseService {
   static getSettings(): SiteSettings {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      const savedTheme = localStorage.getItem('habeevat_background_theme') as any;
+      const savedHeroBg = localStorage.getItem('habeevat_hero_background') as any;
       if (data) {
-        return { ...INITIAL_SETTINGS, ...JSON.parse(data) };
+        const parsed = JSON.parse(data);
+        return {
+          ...INITIAL_SETTINGS,
+          ...parsed,
+          background_theme: savedTheme || parsed.background_theme || INITIAL_SETTINGS.background_theme || 'white',
+          hero_background: savedHeroBg || parsed.hero_background || INITIAL_SETTINGS.hero_background || 'royal_emerald'
+        };
+      } else if (savedTheme || savedHeroBg) {
+        return {
+          ...INITIAL_SETTINGS,
+          background_theme: savedTheme || INITIAL_SETTINGS.background_theme || 'white',
+          hero_background: savedHeroBg || INITIAL_SETTINGS.hero_background || 'royal_emerald'
+        };
       }
     } catch (e) {
       console.warn('Error reading settings from storage', e);
@@ -45,6 +59,12 @@ export class LocalDatabaseService {
   static saveSettings(settings: SiteSettings): void {
     try {
       localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+      if (settings.background_theme) {
+        localStorage.setItem('habeevat_background_theme', settings.background_theme);
+      }
+      if (settings.hero_background) {
+        localStorage.setItem('habeevat_hero_background', settings.hero_background);
+      }
     } catch (e) {
       console.error('Error saving settings', e);
     }

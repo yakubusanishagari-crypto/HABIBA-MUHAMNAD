@@ -6,7 +6,6 @@ import {
   ChevronDown,
   MessageCircle,
   Search,
-  Sparkles,
   ArrowRight,
   Heart,
   ChevronRight,
@@ -451,7 +450,6 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <span>{t.navNewArrivals || 'NEW ARRIVAL'}</span>
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             </button>
 
             {/* 5. PRIVACY POLICY */}
@@ -681,7 +679,6 @@ export const Header: React.FC<HeaderProps> = ({
                   }`}
                 >
                   <span>4. {t.navNewArrivals || 'NEW ARRIVAL'}</span>
-                  <Sparkles className="w-4 h-4 text-amber-400" />
                 </button>
 
                 {/* 5. PRIVACY POLICY */}

@@ -66,12 +66,19 @@ export class FirebaseDatabaseService {
       (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data() as SiteSettings;
-          onData(data);
-          LocalDatabaseService.saveSettings(data);
+          const savedTheme = localStorage.getItem('habeevat_background_theme') as any;
+          const savedHeroBg = localStorage.getItem('habeevat_hero_background') as any;
+          const mergedSettings: SiteSettings = {
+            ...data,
+            background_theme: (data.background_theme as any) || savedTheme || 'white',
+            hero_background: (data.hero_background as any) || savedHeroBg || 'royal_emerald'
+          };
+          onData(mergedSettings);
+          LocalDatabaseService.saveSettings(mergedSettings);
         }
       },
       (error) => {
-        handleFirestoreError(error, OperationType.GET, path);
+        console.warn('Settings subscription notice:', error);
       }
     );
   }
@@ -283,7 +290,7 @@ export class FirebaseDatabaseService {
   static async updateSettings(settings: SiteSettings): Promise<void> {
     const path = 'site_settings';
     try {
-      await setDoc(doc(db, path, 'primary_settings'), settings);
+      await setDoc(doc(db, path, 'primary_settings'), settings, { merge: true });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
     }

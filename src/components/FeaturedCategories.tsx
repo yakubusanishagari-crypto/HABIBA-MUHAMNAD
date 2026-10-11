@@ -99,7 +99,7 @@ export const FeaturedCategories: React.FC<FeaturedCategoriesProps> = ({ onSelect
               <button
                 key={item.id}
                 onClick={() => onSelectCategory(item.id, item.gender)}
-                className="group relative text-left rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 aspect-3/4 flex flex-col justify-end p-5 bg-slate-900 focus:outline-none cursor-pointer"
+                className="group relative text-left rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 aspect-3/4 flex flex-col justify-end p-5 bg-slate-900 focus:outline-none cursor-pointer transform-gpu"
               >
                 {/* Background Image */}
                 <img
@@ -107,6 +107,7 @@ export const FeaturedCategories: React.FC<FeaturedCategoriesProps> = ({ onSelect
                   alt={displayName}
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-85 group-hover:opacity-95"
                   loading="lazy"
+                  decoding="async"
                 />
 
                 {/* Gradient Overlay */}

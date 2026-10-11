@@ -13,7 +13,8 @@ export const INITIAL_SETTINGS: SiteSettings = {
   default_delivery_fee: 2500,
   currency_symbol: '₦',
   announcement_banner: 'Welcome to Habeevatussunnah Online Business! Enjoy convenient OPay transfers and fast WhatsApp order confirmation.',
-  background_theme: 'white'
+  background_theme: 'white',
+  hero_background: 'royal_emerald'
 };
 
 export const INITIAL_CATEGORIES: Category[] = [

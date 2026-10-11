@@ -162,6 +162,7 @@ CREATE TABLE IF NOT EXISTS public.site_settings (
   currency_symbol TEXT DEFAULT '₦',
   announcement_banner TEXT DEFAULT 'Welcome to Habeevatussunnah Online Business! Enjoy convenient OPay transfers and fast order confirmation.',
   background_theme TEXT DEFAULT 'white',
+  hero_background TEXT DEFAULT 'royal_emerald',
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 

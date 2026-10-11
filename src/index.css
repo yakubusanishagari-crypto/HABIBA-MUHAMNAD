@@ -2,9 +2,31 @@
 
 @layer base {
   html {
-    scroll-behavior: smooth;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    /* Prevent white screen flickering and texture eviction during rapid momentum scrolling */
+    -webkit-overflow-scrolling: touch;
+    text-rendering: optimizeLegibility;
   }
+
+  body {
+    background-color: #07132B; /* Dark navy brand anchor matching top header & footer to prevent white flash before paint */
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Hardware accelerated layer promotion for scrolling performance */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: auto;
+}
+
+/* Image containment to avoid reflows and blank image flashes */
+img {
+  content-visibility: auto;
 }
 
 .font-serif-display {

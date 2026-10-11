@@ -70,14 +70,14 @@ export const HeroBottomSection: React.FC<HeroBottomSectionProps> = ({
         {/* Section Header: Elegant White & Brand Colours Composition */}
         <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16 space-y-3">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-xs text-[11px] font-black uppercase tracking-widest text-[#07132B]">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span className="w-2 h-2 rounded-full bg-amber-500"></span>
             <span>The Habeevatussunnah Standard</span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
           </div>
 
           <h2 className="text-2xl sm:text-4xl font-black text-slate-950 tracking-tight font-sans">
             Curated For Distinction,{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-900 via-sky-800 to-emerald-700">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-800 via-teal-700 to-amber-600">
               Delivered With Care
             </span>
           </h2>

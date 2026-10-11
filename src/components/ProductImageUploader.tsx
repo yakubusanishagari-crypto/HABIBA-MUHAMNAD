@@ -9,8 +9,7 @@ import {
   Plus,
   Link as LinkIcon,
   AlertCircle,
-  Loader2,
-  Sparkles
+  Loader2
 } from 'lucide-react';
 import { uploadProductImage } from '../utils/imageUpload';
 
@@ -185,7 +184,7 @@ export const ProductImageUploader: React.FC<ProductImageUploaderProps> = ({
               Direct Phone Camera & Gallery
             </span>
             <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-full">
-              <Sparkles className="w-3 h-3 text-amber-600" />
+              <CheckCircle2 className="w-3 h-3 text-amber-600" />
               Auto-Persistent
             </span>
           </div>

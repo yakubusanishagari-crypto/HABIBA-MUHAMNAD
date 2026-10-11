@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
-import { Phone, MessageCircle, Send, CheckCircle2, MapPin, Clock, ShieldCheck, Mail } from 'lucide-react';
+import {
+  Phone,
+  MessageCircle,
+  Send,
+  CheckCircle2,
+  MapPin,
+  Clock,
+  ShieldCheck,
+  Mail,
+  Sparkles,
+  ExternalLink,
+  AlertCircle
+} from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { createGeneralWhatsAppUrl } from '../utils/formatters';
 
@@ -30,10 +42,10 @@ export const ContactPage: React.FC = () => {
     try {
       setIsSubmitting(true);
       await submitContactMessage({
-        name,
-        email,
-        phone,
-        message
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        message: message.trim()
       });
       setSubmitted(true);
       setName('');
@@ -65,132 +77,185 @@ export const ContactPage: React.FC = () => {
 
   const whatsappUrl = createGeneralWhatsAppUrl(
     settings.whatsapp_number,
-    'Hello Habeevatussunnah, I would like to make an inquiry regarding your collections.'
+    'Hello Habeevatussunnah Online Business, I would like to make an inquiry regarding your products and delivery.'
   );
 
   return (
-    <div className="py-14 bg-slate-50 min-h-screen text-slate-800" dir={dir}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <span className="text-[10px] font-black uppercase tracking-widest text-sky-700 block mb-1">
-            {language === 'ha' ? 'SADARWA DA ABOKAN CINIKI' : language === 'ar' ? 'خدمة العملاء والاستفسارات' : 'CLIENT SERVICES & INQUIRIES'}
+    <div className="py-12 sm:py-16 bg-slate-50 min-h-screen text-slate-800 antialiased" dir={dir}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        {/* Header Section */}
+        <div className="text-center space-y-3">
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase tracking-wider">
+            <Sparkles className="w-3 h-3 text-emerald-700" />
+            {language === 'ha'
+              ? 'SADARWA DA ABOKAN CINIKI'
+              : language === 'ar'
+              ? 'خدمة العملاء والاستفسارات'
+              : 'CLIENT SERVICES & INQUIRIES'}
           </span>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-950 tracking-tight font-sans">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-950 tracking-tight font-sans">
             {t.contactTitle || 'CONTACT US'}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-2 max-w-md mx-auto leading-relaxed">
-            {t.contactSubtitle || 'Have questions about an item, delivery status, or custom orders? Reach our team directly via phone, WhatsApp, or through the message form below.'}
+          <p className="text-sm sm:text-base text-slate-600 max-w-xl mx-auto leading-relaxed">
+            {t.contactSubtitle ||
+              'Have questions about an item, delivery status, or custom orders? Reach our team directly via phone, WhatsApp, or through the message form below.'}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
           {/* Direct Channels Column (5 cols) */}
-          <div className="lg:col-span-5 space-y-5">
-            <div className="bg-white p-6 sm:p-7 rounded-3xl border border-slate-200/90 shadow-xs space-y-5">
-              <h3 className="text-sm font-black uppercase tracking-wider text-slate-900 pb-3 border-b border-slate-100">
-                {language === 'ha' ? 'Hanyoyin Sadarwa na Shago' : language === 'ar' ? 'قنوات التواصل الرسمية' : 'Official Business Channels'}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="bg-white p-7 sm:p-8 rounded-3xl border border-slate-200/90 shadow-sm space-y-6">
+              <h3 className="text-base font-black uppercase tracking-wider text-slate-900 pb-3.5 border-b border-slate-100 flex items-center justify-between">
+                <span>
+                  {language === 'ha'
+                    ? 'Hanyoyin Sadarwa na Shago'
+                    : language === 'ar'
+                    ? 'قنوات التواصل الرسمية'
+                    : 'Official Business Channels'}
+                </span>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               </h3>
 
-              {/* Phone Line: Clickable */}
+              {/* Phone Line 1 & 2: Clickable */}
               <div className="flex items-start gap-4">
-                <div className="w-11 h-11 rounded-2xl bg-sky-50 text-sky-700 flex items-center justify-center shrink-0 border border-sky-100">
-                  <Phone className="w-5 h-5" />
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200/80 shadow-2xs">
+                  <Phone className="w-5 h-5 text-emerald-800" />
                 </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">
+                <div className="flex-1 space-y-1">
+                  <span className="text-[11px] text-slate-400 font-black uppercase tracking-wider block">
                     {t.phoneLine || 'Customer Care Line'}
                   </span>
-                  <a
-                    href={`tel:${settings.phone_number}`}
-                    className="text-base font-black text-slate-950 hover:text-blue-900 transition-colors block"
-                  >
-                    {settings.phone_number}
-                  </a>
-                  <a
-                    href="tel:+2348065812090"
-                    className="text-xs font-bold text-sky-700 hover:underline block mt-0.5"
-                  >
-                    +2348065812090
-                  </a>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {language === 'ha' ? 'Kira kai tsaye domin tambayoyi' : language === 'ar' ? 'مكالمة هاتفية مباشرة للاستفسارات' : 'Direct phone assistance for order inquiries'}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <a
+                      href={`tel:${settings.phone_number}`}
+                      className="text-base font-black text-slate-950 hover:text-emerald-700 transition-colors inline-block"
+                      title="Call primary phone line"
+                    >
+                      {settings.phone_number}
+                    </a>
+                    <span className="hidden sm:inline text-slate-300">·</span>
+                    <a
+                      href="tel:+2348065812090"
+                      className="text-sm font-bold text-emerald-800 hover:underline inline-block"
+                      title="Call secondary line"
+                    >
+                      +2348065812090
+                    </a>
+                  </div>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    {language === 'ha'
+                      ? 'Kira kai tsaye domin tambayoyin oda da shawara.'
+                      : language === 'ar'
+                      ? 'مكالمات هاتفية مباشرة للاستفسارات وتأكيد الطلبات.'
+                      : 'Direct phone assistance for order inquiries & logistics.'}
                   </p>
                 </div>
               </div>
 
               {/* WhatsApp Line: Clickable */}
               <div className="flex items-start gap-4">
-                <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-200/80 shadow-2xs">
                   <MessageCircle className="w-5 h-5 fill-current" />
                 </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">
+                <div className="flex-1 space-y-1">
+                  <span className="text-[11px] text-slate-400 font-black uppercase tracking-wider block">
                     {t.whatsappChat || 'WhatsApp Chat'}
                   </span>
                   <a
                     href={whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-base font-black text-emerald-700 hover:underline block"
+                    className="text-base font-black text-emerald-700 hover:underline inline-flex items-center gap-1.5"
+                    title="Open WhatsApp chat"
                   >
-                    {settings.whatsapp_number}
+                    <span>{settings.whatsapp_number}</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-emerald-600" />
                   </a>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {language === 'ha' ? 'Tattaunawa kai tsaye a WhatsApp' : language === 'ar' ? 'محادثة فورية مع فريق المتجر' : 'Click to chat directly with our store team'}
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    {language === 'ha'
+                      ? 'Tattaunawa kai tsaye a WhatsApp tare da mai kula da shago.'
+                      : language === 'ar'
+                      ? 'محادثة فورية مع فريق المتجر لتأكيد الدفع والتفاصيل.'
+                      : 'Click to chat directly with our store administrator.'}
                   </p>
                 </div>
               </div>
 
               {/* Email: Clickable */}
               <div className="flex items-start gap-4">
-                <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-100">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200/80 shadow-2xs">
                   <Mail className="w-5 h-5" />
                 </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">
-                    {language === 'ha' ? 'Imel din Kasuwanci' : language === 'ar' ? 'البريد الإلكتروني' : 'Customer Email'}
+                <div className="flex-1 space-y-1">
+                  <span className="text-[11px] text-slate-400 font-black uppercase tracking-wider block">
+                    {language === 'ha' ? 'Imel din Kasuwanci' : language === 'ar' ? 'البريد الإلكتروني' : 'Official Customer Email'}
                   </span>
                   <a
                     href="mailto:habibamohammed02090@gmail.com"
-                    className="text-xs sm:text-sm font-bold text-slate-900 hover:text-amber-700 transition-colors break-all block"
+                    className="text-sm font-bold text-slate-900 hover:text-emerald-700 transition-colors break-all block"
+                    title="Send customer email"
                   >
                     habibamohammed02090@gmail.com
                   </a>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    {language === 'ha'
+                      ? 'Domin shawarwari da bukatar hadin gwiwa.'
+                      : language === 'ar'
+                      ? 'للاستفسارات الرسمية والمعاملات المعتمدة.'
+                      : 'Written inquiries, order records, and formal correspondence.'}
+                  </p>
                 </div>
               </div>
 
-              {/* Delivery Scope */}
-              <div className="flex items-start gap-4 pt-1">
-                <div className="w-11 h-11 rounded-2xl bg-slate-50 text-slate-600 flex items-center justify-center shrink-0 border border-slate-100">
-                  <MapPin className="w-5 h-5 text-blue-900" />
+              {/* Nationwide Coverage */}
+              <div className="flex items-start gap-4 pt-2 border-t border-slate-100">
+                <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-700 flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs">
+                  <MapPin className="w-5 h-5 text-emerald-800" />
                 </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">
+                <div className="flex-1 space-y-0.5">
+                  <span className="text-[11px] text-slate-400 font-black uppercase tracking-wider block">
                     {language === 'ha' ? 'Isar da Sako' : language === 'ar' ? 'نطاق التوصيل' : 'Shipping Coverage'}
                   </span>
-                  <p className="text-xs font-bold text-slate-900">
-                    {language === 'ha' ? 'Duk Fadin Najeriya (Jihohi 36 & Abuja)' : language === 'ar' ? 'توصيل لكافة ولايات نيجيريا والعاصمة' : 'Nationwide Shipping Across Nigeria'}
+                  <p className="text-sm font-black text-slate-900">
+                    {language === 'ha'
+                      ? 'Duk Fadin Najeriya (Jihohi 36 & Abuja)'
+                      : language === 'ar'
+                      ? 'توصيل لكافة ولايات نيجيريا والعاصمة'
+                      : 'Nationwide Delivery Across All 36 States & FCT Abuja'}
                   </p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {language === 'ha' ? 'Isarwa har kofar gida ko tashar karba' : language === 'ar' ? 'توصيل لباب المنزل ونقاط الاستلام' : 'Safe doorstep delivery & regional station hubs'}
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    {language === 'ha'
+                      ? 'Isarwa har kofar gida ko tashar karba ta kusa da ku.'
+                      : language === 'ar'
+                      ? 'توصيل لباب المنزل ونقاط الاستلام الإقليمية.'
+                      : 'Direct doorstep dispatch & regional courier stations.'}
                   </p>
                 </div>
               </div>
 
-              {/* Working Hours */}
-              <div className="flex items-start gap-4 pt-1">
-                <div className="w-11 h-11 rounded-2xl bg-slate-50 text-slate-600 flex items-center justify-center shrink-0 border border-slate-100">
-                  <Clock className="w-5 h-5 text-sky-700" />
+              {/* Service Hours */}
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-700 flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs">
+                  <Clock className="w-5 h-5 text-amber-600" />
                 </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">
-                    {language === 'ha' ? 'Lokutan Aiki' : language === 'ar' ? 'أوقات العمل' : 'Service Hours'}
+                <div className="flex-1 space-y-0.5">
+                  <span className="text-[11px] text-slate-400 font-black uppercase tracking-wider block">
+                    {language === 'ha' ? 'Lokutan Aiki' : language === 'ar' ? 'أوقات العمل' : 'Service & Support Hours'}
                   </span>
-                  <p className="text-xs font-bold text-slate-900">
-                    {language === 'ha' ? 'Litinin – Asabar: 8:00 AM – 8:00 PM' : language === 'ar' ? 'الإثنين – السبت: 8:00 ص – 8:00 م' : 'Monday – Saturday: 8:00 AM – 8:00 PM'}
+                  <p className="text-sm font-black text-slate-900">
+                    {language === 'ha'
+                      ? 'Litinin – Asabar: 8:00 AM – 8:00 PM'
+                      : language === 'ar'
+                      ? 'الإثنين – السبت: 8:00 ص – 8:00 م'
+                      : 'Monday – Saturday: 8:00 AM – 8:00 PM'}
                   </p>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {language === 'ha' ? 'Amsa tambayoyi cikin sauri a WhatsApp' : language === 'ar' ? 'رد سريع على محادثات واتساب' : 'WhatsApp inquiries answered promptly'}
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    {language === 'ha'
+                      ? 'Ana amsa sakonni a WhatsApp cikin sauri.'
+                      : language === 'ar'
+                      ? 'الرد على رسائل واتساب خلال ساعات العمل.'
+                      : 'WhatsApp messages answered promptly during service hours.'}
                   </p>
                 </div>
               </div>
@@ -201,70 +266,93 @@ export const ContactPage: React.FC = () => {
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider shadow-lg hover:shadow-emerald-600/20 transition-all text-center"
+              className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl bg-emerald-700 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-800/20 transition-all text-center cursor-pointer"
             >
-              <MessageCircle className="w-5 h-5 fill-current" />
+              <MessageCircle className="w-5 h-5 fill-current text-amber-300" />
               <span>CHAT ON WHATSAPP (+2348034343283)</span>
             </a>
           </div>
 
           {/* Contact Message Form (7 cols) */}
-          <div className="lg:col-span-7 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-xs">
-            <h3 className="text-sm font-black uppercase tracking-wider text-slate-900 pb-3 border-b border-slate-100 mb-6">
-              {t.sendMessage || 'Send a Direct Message'}
-            </h3>
+          <div className="lg:col-span-7 bg-white p-7 sm:p-10 rounded-3xl border border-slate-200/90 shadow-sm space-y-6">
+            <div className="pb-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-black uppercase tracking-wider text-slate-900">
+                  {t.sendMessage || 'Send a Direct Message'}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {language === 'ha'
+                    ? 'Aiko mana da sakon tambaya ko bayanin odar da kuke bukata.'
+                    : language === 'ar'
+                    ? 'أرسل لنا استفسارك وسيقوم فريق العمل بالرد عليك سريعًا.'
+                    : 'Submit your order details or inquiries directly to our administrative desk.'}
+                </p>
+              </div>
+              <ShieldCheck className="w-5 h-5 text-emerald-700 shrink-0" />
+            </div>
 
             {submitted ? (
-              <div className="py-12 text-center space-y-3">
-                <div className="w-14 h-14 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-2xl flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="w-8 h-8" />
+              <div className="py-12 text-center space-y-4">
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 border-2 border-emerald-300 rounded-3xl flex items-center justify-center mx-auto shadow-sm">
+                  <CheckCircle2 className="w-9 h-9" />
                 </div>
-                <h4 className="text-lg font-black text-slate-950 font-sans">
+                <h4 className="text-xl font-black text-slate-950 font-sans">
                   {t.messageReceived || 'Message Received!'}
                 </h4>
-                <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto">
-                  {t.messageReceivedText || 'Thank you for contacting Habeevatussunnah Online Business. Our staff has received your inquiry and will reach back to you shortly.'}
+                <p className="text-sm text-slate-600 max-w-sm mx-auto leading-relaxed">
+                  {t.messageReceivedText ||
+                    'Thank you for contacting Habeevatussunnah Online Business. Our staff has received your inquiry and will reach back to you shortly.'}
                 </p>
                 <button
                   type="button"
                   onClick={() => setSubmitted(false)}
-                  className="mt-4 px-6 py-2.5 bg-slate-950 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-blue-900 transition-colors cursor-pointer"
+                  className="mt-2 px-7 py-3 bg-emerald-800 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-colors cursor-pointer"
                 >
-                  {language === 'ha' ? 'Aika Wani Sakon' : language === 'ar' ? 'إرسال رسالة أخرى' : 'Send Another Message'}
+                  {language === 'ha'
+                    ? 'Aika Wani Sakon'
+                    : language === 'ar'
+                    ? 'إرسال رسالة أخرى'
+                    : 'Send Another Message'}
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    {t.fullName || 'Your Name'} <span className="text-rose-500">*</span>
+                  <label className="text-xs font-black text-slate-800 block mb-1.5 uppercase tracking-wider">
+                    {t.fullName || 'Your Full Name'} <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={e => setName(e.target.value)}
-                    placeholder={language === 'ha' ? 'Misali: Amina Bello' : language === 'ar' ? 'مثال: أمينة بيلو' : 'e.g. Amina Bello'}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    placeholder={
+                      language === 'ha'
+                        ? 'Misali: Amina Bello'
+                        : language === 'ar'
+                        ? 'مثال: أمينة بيلو'
+                        : 'e.g. Amina Bello'
+                    }
+                    className="w-full px-4 py-3.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">
-                      {t.phoneNumber || 'Phone Number'}
+                    <label className="text-xs font-black text-slate-800 block mb-1.5 uppercase tracking-wider">
+                      {t.phoneNumber || 'Phone / WhatsApp'}
                     </label>
                     <input
                       type="tel"
                       value={phone}
                       onChange={e => setPhone(e.target.value)}
-                      placeholder="e.g. 08012345678"
-                      className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      placeholder="e.g. 08034343283"
+                      className="w-full px-4 py-3.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                    <label className="text-xs font-black text-slate-800 block mb-1.5 uppercase tracking-wider">
                       {t.emailAddress || 'Email Address'}
                     </label>
                     <input
@@ -272,13 +360,13 @@ export const ContactPage: React.FC = () => {
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       placeholder="e.g. amina@example.com"
-                      className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full px-4 py-3.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                  <label className="text-xs font-black text-slate-800 block mb-1.5 uppercase tracking-wider">
                     {t.yourMessage || 'Your Message / Inquiry'} <span className="text-rose-500">*</span>
                   </label>
                   <textarea
@@ -288,24 +376,28 @@ export const ContactPage: React.FC = () => {
                     onChange={e => setMessage(e.target.value)}
                     placeholder={
                       language === 'ha'
-                        ? 'Da fatan a bayyana kayan da kuke so ku saya ko yin tambaya...'
+                        ? 'Da fatan a bayyana kayan da kuke so ku saya ko yin tambaya game da oda...'
                         : language === 'ar'
-                        ? 'يرجى كتابة استفساركم أو المنتجات التي ترغبون في طلبها...'
-                        : 'Please specify which product you would like to order or ask any question...'
+                        ? 'يرجى كتابة استفساركم أو المنتجات التي ترغبون في طلبها بالتفصيل...'
+                        : 'Please specify which product you would like to order, required sizes, or ask any question...'
                     }
-                    className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full px-4 py-3.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 transition-all leading-relaxed"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-4 px-6 rounded-xl bg-slate-950 hover:bg-blue-900 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-emerald-800 to-emerald-950 hover:from-emerald-700 hover:to-emerald-900 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-emerald-950/20 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-4 h-4 text-amber-300" />
                   <span>
                     {isSubmitting
-                      ? (language === 'ha' ? 'ANA TURAWA...' : language === 'ar' ? 'جاري الإرسال...' : 'SENDING MESSAGE...')
+                      ? (language === 'ha'
+                          ? 'ANA TURAWA...'
+                          : language === 'ar'
+                          ? 'جاري الإرسال...'
+                          : 'SENDING MESSAGE...')
                       : (t.submitInquiry || 'SUBMIT INQUIRY')}
                   </span>
                 </button>

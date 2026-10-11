@@ -9,7 +9,6 @@ import {
   ArrowLeft,
   Truck,
   MessageCircle,
-  Sparkles,
   Heart,
   Star,
   RefreshCw,
@@ -157,10 +156,10 @@ Could you please confirm availability and delivery?`;
                 src={selectedImage}
                 alt={product.name}
                 className="w-full h-full object-cover object-center"
+                decoding="async"
               />
               {product.is_new_arrival && (
-                <div className="absolute top-4 left-4 bg-slate-950 text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md flex items-center gap-1 shadow-sm">
-                  <Sparkles className="w-3 h-3 text-amber-300" />
+                <div className="absolute top-4 left-4 bg-slate-950 text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md flex items-center shadow-sm">
                   <span>NEW RELEASE</span>
                 </div>
               )}

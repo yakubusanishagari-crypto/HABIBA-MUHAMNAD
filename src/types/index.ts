@@ -125,6 +125,13 @@ export type TrackingStage =
 
 export type BackgroundTheme = 'white' | 'amber' | 'sapphire' | 'emerald' | 'rose';
 
+export type HeroBackgroundOption =
+  | 'royal_emerald'
+  | 'midnight_noir'
+  | 'imperial_ruby'
+  | 'majestic_sapphire'
+  | 'sultan_onyx';
+
 export interface Order {
   id: string; // e.g. ORD-20261008-7492
   customer: CustomerInfo;
@@ -165,6 +172,7 @@ export interface SiteSettings {
   currency_symbol: string;
   announcement_banner?: string;
   background_theme?: BackgroundTheme;
+  hero_background?: HeroBackgroundOption;
 }
 
 export type SortOption =
