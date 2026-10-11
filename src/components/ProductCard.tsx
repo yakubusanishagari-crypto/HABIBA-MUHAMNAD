@@ -51,11 +51,11 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, on
       className="group relative bg-white border border-slate-200/80 rounded-2xl overflow-hidden hover:border-slate-300 hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer transform-gpu"
     >
       {/* Image Container with Consistent Ratio */}
-      <div className="relative aspect-4/5 bg-slate-50 overflow-hidden flex items-center justify-center p-2.5">
+      <div className="relative aspect-4/5 w-full bg-slate-50/80 overflow-hidden flex items-center justify-center p-3 sm:p-4">
         <img
           src={product.main_image}
           alt={product.name}
-          className="w-full h-full object-contain object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+          className="w-full h-full object-contain object-center transition-transform duration-300 ease-out select-none"
           loading="lazy"
           decoding="async"
         />

@@ -77,7 +77,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   <img
                     src={item.product.main_image}
                     alt={item.product.name}
-                    className="w-20 h-20 rounded-xl object-contain p-1 bg-white shrink-0 border border-slate-200"
+                    className="w-20 h-24 rounded-xl object-contain p-1 bg-slate-50 shrink-0 border border-slate-200"
                   />
 
                   {/* Details */}

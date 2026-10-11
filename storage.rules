@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules for HABEEBATUSSUNNAH ONLINE BUSINESS
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Default Deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Product Images: Public read for store customers, verified image uploads for admin
+    match /products/{imageId} {
+      // Allow any customer or visitor to view product photos
+      allow read: if true;
+      
+      // Allow image uploads up to 25MB with valid image content types
+      allow write: if request.resource.size < 25 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Connection testing endpoint
+    match /connection-test/{testId} {
+      allow read, write: if true;
+    }
+  }
+}

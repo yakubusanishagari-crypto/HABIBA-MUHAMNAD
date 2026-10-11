@@ -214,7 +214,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({
                       <img
                         src={product.main_image}
                         alt={product.name}
-                        className="w-14 h-14 rounded-xl object-contain p-1 bg-white shrink-0 border border-slate-200/80"
+                        className="w-14 h-16 rounded-xl object-contain p-1 bg-slate-50 shrink-0 border border-slate-200/80"
                       />
                       <div>
                         <h4 className="text-xs sm:text-sm font-bold text-slate-950 group-hover:text-blue-900 transition-colors">

@@ -62,7 +62,7 @@ export const WishlistDrawer: React.FC<WishlistDrawerProps> = ({
                     <img
                       src={product.main_image}
                       alt={product.name}
-                      className="w-18 h-18 rounded-xl object-contain p-1 bg-white shrink-0 border border-slate-200"
+                      className="w-18 h-22 rounded-xl object-contain p-1 bg-slate-50 shrink-0 border border-slate-200"
                     />
 
                     <div className="flex-1 min-w-0">

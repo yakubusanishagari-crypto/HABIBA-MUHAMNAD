@@ -1,22 +1,15 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { INITIAL_CATEGORIES, INITIAL_PRODUCTS, INITIAL_SETTINGS, INITIAL_SUBCATEGORIES } from '../data/initialData';
 import { Category, Subcategory, Product, Order, ContactMessage, SiteSettings, PaymentStatus, OrderStatus, TrackingStage } from '../types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+/**
+ * Notice: This project exclusively uses Firebase Firestore & Firebase Storage
+ * for database persistence, media storage, and admin authentication.
+ * Supabase has been cleanly decommissioned as requested.
+ */
+export const isSupabaseConfigured = false;
+export const supabase = null;
 
-export const isSupabaseConfigured = Boolean(
-  supabaseUrl &&
-  supabaseAnonKey &&
-  supabaseUrl !== 'https://your-project.supabase.co' &&
-  supabaseAnonKey !== 'your-anon-key'
-);
-
-export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
-
-// Storage keys for persistent store
+// Storage keys for persistent store fallback cache
 const STORAGE_KEYS = {
   SETTINGS: 'habeevat_store_settings',
   CATEGORIES: 'habeevat_categories',

@@ -484,7 +484,7 @@ export const OrderLookupPage: React.FC<OrderLookupPageProps> = ({
                             <img
                               src={item.product_image}
                               alt=""
-                              className="w-12 h-12 rounded-xl object-contain p-0.5 bg-white shrink-0 border border-slate-100"
+                              className="w-12 h-14 rounded-xl object-contain p-0.5 bg-slate-50 shrink-0 border border-slate-100"
                             />
                             <div>
                               <p className="font-bold text-slate-900">{item.product_name}</p>

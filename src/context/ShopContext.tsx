@@ -16,7 +16,7 @@ import {
   HeroBackgroundOption
 } from '../types';
 import { HERO_BACKGROUND_CONFIGS } from '../data/heroBackgrounds';
-import { LocalDatabaseService, isSupabaseConfigured, supabase } from '../lib/supabase';
+import { LocalDatabaseService } from '../lib/supabase';
 import { FirebaseDatabaseService } from '../lib/firebaseDatabase';
 import { testConnection } from '../lib/firebase';
 import { verifyAdminPassword, updateAdminPassword as updateAdminPasswordSec, resetAdminPasswordToDefault } from '../utils/security';

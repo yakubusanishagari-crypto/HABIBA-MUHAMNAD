@@ -58,11 +58,11 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2">
           {/* Left: Gallery */}
           <div className="p-6 bg-slate-50 flex flex-col justify-between">
-            <div className="aspect-square rounded-2xl overflow-hidden bg-white border border-slate-200/80 flex items-center justify-center p-3">
+            <div className="aspect-4/5 rounded-2xl overflow-hidden bg-white border border-slate-200/80 flex items-center justify-center p-4 sm:p-5">
               <img
                 src={selectedImage}
                 alt={product.name}
-                className="w-full h-full object-contain object-center"
+                className="w-full h-full object-contain object-center select-none"
               />
             </div>
 

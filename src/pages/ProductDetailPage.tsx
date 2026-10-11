@@ -151,11 +151,11 @@ Could you please confirm availability and delivery?`;
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
           {/* Gallery Column (6 cols) */}
           <div className="lg:col-span-6 space-y-4 lg:sticky lg:top-28">
-            <div className="relative aspect-4/5 rounded-3xl overflow-hidden bg-slate-50/80 border border-slate-200/80 shadow-md flex items-center justify-center p-3 sm:p-5">
+            <div className="relative aspect-4/5 rounded-3xl overflow-hidden bg-slate-50/80 border border-slate-200/80 shadow-md flex items-center justify-center p-4 sm:p-6">
               <img
                 src={selectedImage}
                 alt={product.name}
-                className="w-full h-full object-contain object-center transition-transform duration-300 hover:scale-105"
+                className="w-full h-full object-contain object-center transition-transform duration-300 select-none"
                 decoding="async"
               />
               {product.is_new_arrival && (

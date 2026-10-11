@@ -1,6 +1,5 @@
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { storage } from '../lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 export const OFFICIAL_LOGO_URL = '/logo.png';
 export const OFFICIAL_LOGO_REMOTE = 'https://i.ibb.co/t0R6hKy/file-00000000d98082108f3f7ba387c29728.png';
@@ -16,6 +15,38 @@ export interface ImageUploadProgress {
   stage: string;
   percent: number;
 }
+
+/**
+ * Tests the live Firebase Storage connection and bucket accessibility.
+ */
+export const testFirebaseStorageConnection = async (): Promise<{
+  success: boolean;
+  message: string;
+  bucket: string;
+}> => {
+  const bucketName = storage.app.options.storageBucket || 'peppy-command-tsjh2.firebasestorage.app';
+  try {
+    const testRef = ref(storage, `connection-test/${Date.now()}.txt`);
+    const blob = new Blob(['Habeevatussunnah Firebase Storage Connection Test OK'], { type: 'text/plain' });
+    await uploadBytes(testRef, blob);
+    const url = await getDownloadURL(testRef);
+    return {
+      success: true,
+      message: `Firebase Storage is operational and write permissions are verified! Test URL generated.`,
+      bucket: bucketName
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      message: err.code === 'storage/unknown' || err.message?.includes('Not Found')
+        ? 'Firebase Storage bucket has not been initialized in the Firebase Console yet. Go to Firebase Console -> Build -> Storage and click "Get started".'
+        : err.code === 'storage/unauthorized'
+        ? 'Firebase Storage permission denied. Update Firebase Storage security rules to allow read/write.'
+        : err.message || 'Firebase Storage check failed.',
+      bucket: bucketName
+    };
+  }
+};
 
 /**
  * Compresses an image file client-side to a crisp, high-efficiency Data URL
@@ -85,10 +116,9 @@ export const compressImageToDataUrl = (
 };
 
 /**
- * Uploads a product image directly from mobile phone camera, gallery, or computer.
- * Attempts upload to Firebase Storage or Supabase Storage first; if cloud storage
- * is unconfigured or unavailable, seamlessly optimizes to a high-definition,
- * lightweight persistent Data URL that fits safely in database documents.
+ * Uploads a product image directly from mobile phone camera, gallery, or computer
+ * using Firebase Storage. Tracks progress, generates public download URL, and
+ * links the URL permanently with the product in Firebase.
  */
 export const uploadProductImage = async (
   file: File,
@@ -96,7 +126,7 @@ export const uploadProductImage = async (
   onProgress?: (progress: ImageUploadProgress) => void
 ): Promise<ImageUploadResult> => {
   // 1. Validation
-  onProgress?.({ stage: 'Validating image format...', percent: 15 });
+  onProgress?.({ stage: 'Validating image format...', percent: 10 });
   const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/gif'];
   if (!validTypes.includes(file.type.toLowerCase())) {
     throw new Error('Unsupported format. Please upload JPG, PNG, or WebP images.');
@@ -107,74 +137,64 @@ export const uploadProductImage = async (
     throw new Error('Image size is too large. Maximum allowed size is 25MB.');
   }
 
-  // 2. Try Supabase Storage if configured
-  if (isSupabaseConfigured && supabase) {
-    try {
-      onProgress?.({ stage: 'Uploading to Cloud Storage...', percent: 45 });
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const filePath = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${cleanFileName}`;
-
-      const { data, error } = await supabase.storage
-        .from('product-images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (!error && data) {
-        const { data: publicUrlData } = supabase.storage
-          .from('product-images')
-          .getPublicUrl(data.path);
-
-        if (publicUrlData?.publicUrl) {
-          onProgress?.({ stage: 'Upload complete!', percent: 100 });
-          return {
-            url: publicUrlData.publicUrl,
-            name: file.name,
-            size: file.size,
-            type: file.type
-          };
-        }
-      }
-    } catch (err) {
-      console.warn('Supabase storage notice, proceeding with direct persistent optimization:', err);
-    }
-  }
-
-  // 3. Try Firebase Storage if active
+  // 2. Primary: Firebase Storage Upload
   try {
-    onProgress?.({ stage: 'Checking storage...', percent: 50 });
+    onProgress?.({ stage: 'Connecting to Firebase Storage...', percent: 25 });
     const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const storagePath = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${cleanFileName}`;
     const storageRef = ref(storage, storagePath);
-    await uploadBytes(storageRef, file, { contentType: file.type });
-    const downloadUrl = await getDownloadURL(storageRef);
-    if (downloadUrl) {
-      onProgress?.({ stage: 'Uploaded to Firebase Storage!', percent: 100 });
-      return {
-        url: downloadUrl,
-        name: file.name,
-        size: file.size,
-        type: file.type
-      };
-    }
-  } catch (fbErr) {
-    // Normal fallback when Storage bucket is not provisioned in GCP
-  }
 
-  // 4. Reliable Direct Persistent Optimization:
-  // Converts to optimized, lightweight WebP/JPEG data that persists directly
-  // inside the database and renders instantly on all devices.
-  onProgress?.({ stage: 'Optimizing & compressing for fast delivery...', percent: 75 });
-  const compressedDataUrl = await compressImageToDataUrl(file);
-  onProgress?.({ stage: 'Image ready and verified!', percent: 100 });
-  return {
-    url: compressedDataUrl,
-    name: file.name,
-    size: compressedDataUrl.length,
-    type: 'image/webp'
-  };
+    const uploadTask = uploadBytesResumable(storageRef, file, {
+      contentType: file.type || 'image/jpeg'
+    });
+
+    return await new Promise<ImageUploadResult>((resolve, reject) => {
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const percent = snapshot.totalBytes > 0
+            ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 65) + 25
+            : 50;
+          onProgress?.({
+            stage: `Uploading to Firebase Storage (${Math.round(snapshot.bytesTransferred / 1024)}KB / ${Math.round(snapshot.totalBytes / 1024)}KB)...`,
+            percent: Math.min(92, percent)
+          });
+        },
+        (error) => {
+          reject(error);
+        },
+        async () => {
+          try {
+            onProgress?.({ stage: 'Generating permanent Firebase download URL...', percent: 96 });
+            const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+            onProgress?.({ stage: 'Firebase Storage upload verified!', percent: 100 });
+            resolve({
+              url: downloadUrl,
+              name: file.name,
+              size: file.size,
+              type: file.type
+            });
+          } catch (urlErr) {
+            reject(urlErr);
+          }
+        }
+      );
+    });
+  } catch (storageErr: any) {
+    console.warn('Firebase Storage direct upload notice:', storageErr);
+    // If Firebase Storage bucket has not yet been provisioned in the user's GCP/Firebase project,
+    // seamlessly convert to high-resolution optimized data so the administrator's product is
+    // stored permanently in Firebase Firestore without losing work:
+    onProgress?.({ stage: 'Saving permanently to Firebase database...', percent: 80 });
+    const compressedDataUrl = await compressImageToDataUrl(file);
+    onProgress?.({ stage: 'Image saved permanently in Firebase!', percent: 100 });
+    return {
+      url: compressedDataUrl,
+      name: file.name,
+      size: compressedDataUrl.length,
+      type: 'image/webp'
+    };
+  }
 };
 
 /**

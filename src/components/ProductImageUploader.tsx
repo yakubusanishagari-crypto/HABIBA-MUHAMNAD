@@ -335,11 +335,11 @@ export const ProductImageUploader: React.FC<ProductImageUploaderProps> = ({
                 }`}
               >
                 {/* Thumbnail */}
-                <div className="aspect-square w-full bg-slate-50 overflow-hidden flex items-center justify-center p-1.5">
+                <div className="aspect-4/5 w-full bg-slate-50 overflow-hidden flex items-center justify-center p-2.5">
                   <img
                     src={imgUrl}
                     alt={`Product preview ${index + 1}`}
-                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-contain transition-transform duration-300 select-none"
                     onError={e => {
                       (e.target as HTMLImageElement).src =
                         'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?auto=format&fit=crop&w=600&q=80';

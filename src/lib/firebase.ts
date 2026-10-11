@@ -18,10 +18,15 @@ import firebaseConfig from '../../firebase-applet-config.json';
 // Initialize Firebase App
 const app = initializeApp(firebaseConfig);
 
+const activeStorageBucket =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_FIREBASE_STORAGE_BUCKET) ||
+  firebaseConfig.storageBucket ||
+  `${firebaseConfig.projectId}.firebasestorage.app`;
+
 // CRITICAL: Must pass databaseId from config
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
-export const storage = getStorage(app);
+export const storage = getStorage(app, activeStorageBucket);
 export const googleProvider = new GoogleAuthProvider();
 
 export enum OperationType {
