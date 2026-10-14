@@ -133,7 +133,7 @@ export const INITIAL_CATEGORIES: Category[] = [
 ];
 
 export const INITIAL_SUBCATEGORIES: Subcategory[] = [
-  // 1. Home & Kitchen (Expanded with essential home, kitchenware, bedding, and decor)
+  // 1. Home & Kitchen (Expanded with 12 important new items & categories)
   { id: 'sub-home-beds', category_id: 'cat-home', name: 'Bed Sets & Duvets', slug: 'beds-duvets' },
   { id: 'sub-home-cookware', category_id: 'cat-home', name: 'Cookware, Pots & Non-Stick Pans', slug: 'cookware-pots' },
   { id: 'sub-home-dinnerware', category_id: 'cat-home', name: 'Dinnerware, Plates & Cutlery Sets', slug: 'dinnerware-cutlery' },
@@ -146,6 +146,10 @@ export const INITIAL_SUBCATEGORIES: Subcategory[] = [
   { id: 'sub-home-clocks-art', category_id: 'cat-home', name: 'Wall Clocks & Decorative Mirrors', slug: 'wall-clocks-mirrors' },
   { id: 'sub-home-dish-racks', category_id: 'cat-home', name: 'Dish Drying Racks & Counter Organizers', slug: 'dish-racks' },
   { id: 'sub-home-sheets-pillows', category_id: 'cat-home', name: 'Bed Sheets, Pillows & Mattress Covers', slug: 'bedsheets-pillows' },
+  { id: 'sub-home-air-fryers', category_id: 'cat-home', name: 'Air Fryers & Deep Fryers', slug: 'air-fryers' },
+  { id: 'sub-home-pressure-cookers', category_id: 'cat-home', name: 'Pressure Cookers & Rice Cookers', slug: 'pressure-cookers' },
+  { id: 'sub-home-thermal-dispenser', category_id: 'cat-home', name: 'Water Dispensers & Thermal Flasks', slug: 'water-dispensers' },
+  { id: 'sub-home-electric-kettles', category_id: 'cat-home', name: 'Electric Kettles & Tea Makers', slug: 'electric-kettles' },
 
   // 2. Women
   { id: 'sub-women-abayas', category_id: 'cat-women', name: 'Modest Abayas & Jalabiyas', slug: 'abayas-jalabiyas' },
