@@ -206,7 +206,7 @@ export const uploadProductImage = async (
       if (uploadErr) {
         if (uploadErr.message?.toLowerCase().includes('bucket not found') || uploadErr.message?.includes('Bucket')) {
           throw new Error(
-            `Supabase bucket '${bucketName}' does not exist yet. Please create a public bucket named '${bucketName}' in your Supabase Dashboard under Storage -> New bucket, or run the SQL migration script.`
+            `Supabase bucket '${bucketName}' does not exist yet. Please create a public bucket named '${bucketName}' in your Supabase Dashboard under Storage -> New bucket.`
           );
         }
         if (
@@ -215,10 +215,10 @@ export const uploadProductImage = async (
           (uploadErr as any).statusCode === 403 ||
           (uploadErr as any).statusCode === '403'
         ) {
-          console.warn('Supabase storage RLS requires public write rule. Falling back to high-res data URL.', uploadErr);
-          onProgress?.({ stage: 'Optimizing high-res image directly for product...', percent: 80 });
+          console.warn('Supabase storage RLS requires public write rule. Falling back to Supabase-optimized data URL.', uploadErr);
+          onProgress?.({ stage: 'Optimizing high-res image directly for Supabase...', percent: 80 });
           const fallbackDataUrl = await compressImageToDataUrl(file);
-          onProgress?.({ stage: 'Image secured and ready for product!', percent: 100 });
+          onProgress?.({ stage: 'Image secured and ready for Supabase!', percent: 100 });
           return {
             url: fallbackDataUrl,
             name: file.name,
@@ -250,8 +250,8 @@ export const uploadProductImage = async (
         err.message?.toLowerCase().includes('row-level security') ||
         err.message?.toLowerCase().includes('violates row-level')
       ) {
-        console.warn('Supabase RLS caught in exception. Falling back to high-res data URL.', err);
-        onProgress?.({ stage: 'Optimizing high-res image directly for product...', percent: 85 });
+        console.warn('Supabase RLS caught in exception. Falling back to Supabase-optimized data URL.', err);
+        onProgress?.({ stage: 'Optimizing high-res image directly for Supabase...', percent: 85 });
         const fallbackDataUrl = await compressImageToDataUrl(file);
         return {
           url: fallbackDataUrl,
@@ -266,64 +266,20 @@ export const uploadProductImage = async (
     }
   }
 
-  // 3. SECONDARY STRATEGY: Firebase Storage
+  // 3. SUPABASE OFFLINE / DIRECT OPTIMIZED STORAGE FALLBACK (Zero Firebase dependency)
   try {
-    onProgress?.({ stage: 'Connecting to Firebase Storage...', percent: 25 });
-    const storageRef = ref(storage, storagePath);
-
-    const uploadTask = uploadBytesResumable(storageRef, file, {
-      contentType: file.type || 'image/jpeg'
-    });
-
-    return await new Promise<ImageUploadResult>((resolve, reject) => {
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const percent = snapshot.totalBytes > 0
-            ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 65) + 25
-            : 50;
-          onProgress?.({
-            stage: `Uploading to Firebase Storage (${Math.round(snapshot.bytesTransferred / 1024)}KB / ${Math.round(snapshot.totalBytes / 1024)}KB)...`,
-            percent: Math.min(92, percent)
-          });
-        },
-        (error) => {
-          reject(error);
-        },
-        async () => {
-          try {
-            onProgress?.({ stage: 'Generating permanent Firebase download URL...', percent: 96 });
-            const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-            onProgress?.({ stage: 'Firebase Storage upload verified!', percent: 100 });
-            resolve({
-              url: downloadUrl,
-              name: file.name,
-              size: file.size,
-              type: file.type,
-              provider: 'firebase'
-            });
-          } catch (urlErr) {
-            reject(urlErr);
-          }
-        }
-      );
-    });
-  } catch (storageErr: any) {
-    console.warn('Cloud storage error encountered. Automatically falling back to high-efficiency client-side base64 data URL for instant Vercel compatibility:', storageErr);
-    try {
-      onProgress?.({ stage: 'Optimizing and securing image locally...', percent: 80 });
-      const fallbackDataUrl = await compressImageToDataUrl(file);
-      onProgress?.({ stage: 'Image secured successfully!', percent: 100 });
-      return {
-        url: fallbackDataUrl,
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        provider: isSupabaseConfigured ? 'supabase' : 'firebase'
-      };
-    } catch (fallbackErr: any) {
-      throw new Error(storageErr.message || fallbackErr.message || 'Image upload failed. Please try again.');
-    }
+    onProgress?.({ stage: 'Optimizing image for Supabase & Vercel deployment...', percent: 40 });
+    const fallbackDataUrl = await compressImageToDataUrl(file);
+    onProgress?.({ stage: 'Image secured and ready for Supabase database!', percent: 100 });
+    return {
+      url: fallbackDataUrl,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      provider: 'supabase'
+    };
+  } catch (fallbackErr: any) {
+    throw new Error(fallbackErr.message || 'Image upload failed. Please try again.');
   }
 };
 
