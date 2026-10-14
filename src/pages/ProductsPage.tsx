@@ -348,7 +348,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = ({
                         selectedSubcategory === sub.id ? 'text-blue-900 font-bold' : 'text-slate-600 hover:bg-slate-50'
                       }`}
                     >
-                      • {sub.name}
+                      {sub.name}
                     </button>
                   ))}
                 </div>

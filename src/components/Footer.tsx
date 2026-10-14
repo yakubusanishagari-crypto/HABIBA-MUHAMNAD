@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, MessageCircle, MapPin, ShieldCheck, ArrowRight, Sparkles, Package, ShoppingBag, Mail, Lock } from 'lucide-react';
+import { Phone, MessageCircle, MapPin, ShieldCheck, ArrowRight, Package, ShoppingBag, Mail, Lock } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { createGeneralWhatsAppUrl } from '../utils/formatters';
 
@@ -51,11 +51,10 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
             <div className="space-y-1.5">
               <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
                 <span>Curated Elegance & Verified Quality</span>
               </div>
               <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                HABEEBATUSSUNNAH ONLINE BUSINESS
+                HABEEVATUSSUNNAH ONLINE BUSINESS
               </h3>
               <p className="text-xs sm:text-sm text-slate-400 max-w-xl leading-relaxed">
                 Nigeria’s distinguished destination for contemporary fashion, graceful modest wear, premium footwear, statement jewelry, beauty, and home lifestyle collections.
@@ -63,7 +62,7 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
           </div>
 
-          {/* Top-Right Compact Action Icons: TRACK ORDER, WHATSAPP, SHOP NOW */}
+          {/* Top-Right Compact Action Icons: TRACK ORDER, CONTACT US, SHOP NOW */}
           <div className="lg:col-span-6 xl:col-span-5 flex items-center justify-start lg:justify-end">
             <div className="grid grid-cols-3 sm:flex sm:flex-row items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
               {/* 1. TRACK ORDER */}
@@ -78,18 +77,17 @@ export const Footer: React.FC<FooterProps> = ({
                 <span className="truncate">{t.footerTrackOrder || 'TRACK ORDER'}</span>
               </button>
 
-              {/* 2. WHATSAPP */}
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-3 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 hover:text-white border border-emerald-800/80 hover:border-emerald-500/70 transition-all font-black text-[11px] sm:text-xs uppercase tracking-wider shadow-sm group text-center"
-                aria-label="Chat with Customer Desk on WhatsApp"
-                title="WhatsApp"
+              {/* 2. CONTACT US */}
+              <button
+                type="button"
+                onClick={() => handleNav('contact')}
+                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-emerald-300 hover:text-white border border-slate-800 hover:border-emerald-500/70 transition-all font-black text-[11px] sm:text-xs uppercase tracking-wider shadow-sm group text-center cursor-pointer"
+                aria-label="Contact Customer Support Desk"
+                title="Contact Support"
               >
-                <MessageCircle className="w-4 h-4 fill-current text-emerald-400 group-hover:scale-110 transition-transform shrink-0" />
-                <span className="truncate">{t.footerWhatsApp || 'WHATSAPP'}</span>
-              </a>
+                <Phone className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform shrink-0" />
+                <span className="truncate">{t.navContactUs || 'CONTACT US'}</span>
+              </button>
 
               {/* 3. SHOP NOW */}
               <button
@@ -288,7 +286,6 @@ export const Footer: React.FC<FooterProps> = ({
               </div>
 
               <div className="pt-1 text-[10.5px] text-emerald-400 font-semibold flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span>Active Customer Desk</span>
               </div>
             </div>

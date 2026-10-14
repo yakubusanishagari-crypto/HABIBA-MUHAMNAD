@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, X, ArrowRight, Tag, Sparkles, Clock, TrendingUp } from 'lucide-react';
+import { Search, X, ArrowRight, Tag, Clock, TrendingUp } from 'lucide-react';
 import { Product } from '../types';
 import { useShop } from '../context/ShopContext';
 import { formatPrice } from '../utils/formatters';

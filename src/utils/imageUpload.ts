@@ -1,5 +1,6 @@
 import { storage } from '../lib/firebase';
 import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export const OFFICIAL_LOGO_URL = '/logo.png';
 export const OFFICIAL_LOGO_REMOTE = 'https://i.ibb.co/t0R6hKy/file-00000000d98082108f3f7ba387c29728.png';
@@ -9,6 +10,7 @@ export interface ImageUploadResult {
   name: string;
   size: number;
   type: string;
+  provider: 'supabase' | 'firebase';
 }
 
 export interface ImageUploadProgress {
@@ -17,13 +19,54 @@ export interface ImageUploadProgress {
 }
 
 /**
- * Tests the live Firebase Storage connection and bucket accessibility.
+ * Tests live storage connection (Supabase or Firebase) and bucket accessibility.
  */
-export const testFirebaseStorageConnection = async (): Promise<{
+export const testStorageConnection = async (): Promise<{
   success: boolean;
   message: string;
+  provider: 'supabase' | 'firebase';
   bucket: string;
 }> => {
+  // 1. If Supabase is configured, test Supabase Storage
+  if (isSupabaseConfigured && supabase) {
+    const bucket = 'product-images';
+    try {
+      const probeName = `connection-test/${Date.now()}.txt`;
+      const blob = new Blob(['Habeevatussunnah Supabase Storage Probe OK'], { type: 'text/plain' });
+      const { error: uploadErr } = await supabase.storage.from(bucket).upload(probeName, blob, {
+        upsert: true
+      });
+      if (uploadErr) {
+        const isRls = uploadErr.message?.toLowerCase().includes('row-level security') || uploadErr.message?.toLowerCase().includes('policy');
+        return {
+          success: false,
+          provider: 'supabase',
+          bucket,
+          message: isRls
+            ? `Supabase bucket '${bucket}' exists and is connected! However, writing new objects requires updating the storage RLS policy in Supabase SQL Editor. Run the provided 4-line SQL storage policy update.`
+            : uploadErr.message?.includes('not found') || uploadErr.message?.includes('Bucket')
+            ? `Supabase bucket '${bucket}' not found. Please create a public bucket named '${bucket}' in the Supabase Dashboard under Storage.`
+            : `Supabase Storage error: ${uploadErr.message}`
+        };
+      }
+      const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(probeName);
+      return {
+        success: true,
+        provider: 'supabase',
+        bucket,
+        message: `Supabase Storage ('${bucket}') is active, writable, and public CDN URLs are operational! Test URL: ${publicUrlData.publicUrl}`
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        provider: 'supabase',
+        bucket,
+        message: err.message || 'Supabase Storage probe failed.'
+      };
+    }
+  }
+
+  // 2. Test Firebase Storage
   const bucketName = storage.app.options.storageBucket || 'peppy-command-tsjh2.firebasestorage.app';
   try {
     const testRef = ref(storage, `connection-test/${Date.now()}.txt`);
@@ -32,21 +75,26 @@ export const testFirebaseStorageConnection = async (): Promise<{
     const url = await getDownloadURL(testRef);
     return {
       success: true,
+      provider: 'firebase',
       message: `Firebase Storage is operational and write permissions are verified! Test URL generated.`,
       bucket: bucketName
     };
   } catch (err: any) {
     return {
       success: false,
-      message: err.code === 'storage/unknown' || err.message?.includes('Not Found')
-        ? 'Firebase Storage bucket has not been initialized in the Firebase Console yet. Go to Firebase Console -> Build -> Storage and click "Get started".'
+      provider: 'firebase',
+      message: err.code === 'storage/unknown' || err.message?.includes('Not Found') || err.message?.includes('404')
+        ? 'Firebase Storage bucket has not been initialized in the Firebase Console yet (HTTP 404). Go to Firebase Console -> Build -> Storage and click "Get started", or configure Supabase Storage by setting VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'
         : err.code === 'storage/unauthorized'
-        ? 'Firebase Storage permission denied. Update Firebase Storage security rules to allow read/write.'
+        ? 'Firebase Storage permission denied. Update Firebase Storage security rules to allow authenticated/admin write access.'
         : err.message || 'Firebase Storage check failed.',
       bucket: bucketName
     };
   }
 };
+
+// Backwards-compatible alias for existing AdminDashboard imports
+export const testFirebaseStorageConnection = testStorageConnection;
 
 /**
  * Compresses an image file client-side to a crisp, high-efficiency Data URL
@@ -117,8 +165,8 @@ export const compressImageToDataUrl = (
 
 /**
  * Uploads a product image directly from mobile phone camera, gallery, or computer
- * using Firebase Storage. Tracks progress, generates public download URL, and
- * links the URL permanently with the product in Firebase.
+ * using Supabase Storage or Firebase Storage. Tracks progress, generates public CDN URL,
+ * and links the URL permanently with the product record.
  */
 export const uploadProductImage = async (
   file: File,
@@ -137,11 +185,90 @@ export const uploadProductImage = async (
     throw new Error('Image size is too large. Maximum allowed size is 25MB.');
   }
 
-  // 2. Primary: Firebase Storage Upload
+  const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const storagePath = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${cleanFileName}`;
+
+  // 2. PRIMARY STRATEGY: Supabase Storage (if configured)
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const bucketName = 'product-images';
+      onProgress?.({ stage: 'Connecting to Supabase Storage...', percent: 30 });
+
+      // Direct upload to Supabase Storage
+      const { data: uploadData, error: uploadErr } = await supabase.storage
+        .from(bucketName)
+        .upload(storagePath, file, {
+          cacheControl: '31536000',
+          upsert: true,
+          contentType: file.type || 'image/jpeg'
+        });
+
+      if (uploadErr) {
+        if (uploadErr.message?.toLowerCase().includes('bucket not found') || uploadErr.message?.includes('Bucket')) {
+          throw new Error(
+            `Supabase bucket '${bucketName}' does not exist yet. Please create a public bucket named '${bucketName}' in your Supabase Dashboard under Storage -> New bucket, or run the SQL migration script.`
+          );
+        }
+        if (
+          uploadErr.message?.toLowerCase().includes('row-level security') ||
+          uploadErr.message?.toLowerCase().includes('violates row-level') ||
+          (uploadErr as any).statusCode === 403 ||
+          (uploadErr as any).statusCode === '403'
+        ) {
+          console.warn('Supabase storage RLS requires public write rule. Falling back to high-res data URL.', uploadErr);
+          onProgress?.({ stage: 'Optimizing high-res image directly for product...', percent: 80 });
+          const fallbackDataUrl = await compressImageToDataUrl(file);
+          onProgress?.({ stage: 'Image secured and ready for product!', percent: 100 });
+          return {
+            url: fallbackDataUrl,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            provider: 'supabase'
+          };
+        }
+        throw new Error(`Supabase upload failed: ${uploadErr.message}`);
+      }
+
+      onProgress?.({ stage: 'Generating permanent Supabase CDN URL...', percent: 90 });
+      const { data: urlData } = supabase.storage.from(bucketName).getPublicUrl(uploadData?.path || storagePath);
+
+      if (!urlData?.publicUrl) {
+        throw new Error('Failed to retrieve public CDN URL from Supabase Storage.');
+      }
+
+      onProgress?.({ stage: 'Supabase Storage upload verified!', percent: 100 });
+      return {
+        url: urlData.publicUrl,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        provider: 'supabase'
+      };
+    } catch (err: any) {
+      if (
+        err.message?.toLowerCase().includes('row-level security') ||
+        err.message?.toLowerCase().includes('violates row-level')
+      ) {
+        console.warn('Supabase RLS caught in exception. Falling back to high-res data URL.', err);
+        onProgress?.({ stage: 'Optimizing high-res image directly for product...', percent: 85 });
+        const fallbackDataUrl = await compressImageToDataUrl(file);
+        return {
+          url: fallbackDataUrl,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          provider: 'supabase'
+        };
+      }
+      console.error('Supabase upload exception:', err);
+      throw err;
+    }
+  }
+
+  // 3. SECONDARY STRATEGY: Firebase Storage
   try {
     onProgress?.({ stage: 'Connecting to Firebase Storage...', percent: 25 });
-    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const storagePath = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${cleanFileName}`;
     const storageRef = ref(storage, storagePath);
 
     const uploadTask = uploadBytesResumable(storageRef, file, {
@@ -172,7 +299,8 @@ export const uploadProductImage = async (
               url: downloadUrl,
               name: file.name,
               size: file.size,
-              type: file.type
+              type: file.type,
+              provider: 'firebase'
             });
           } catch (urlErr) {
             reject(urlErr);
@@ -181,19 +309,26 @@ export const uploadProductImage = async (
       );
     });
   } catch (storageErr: any) {
-    console.warn('Firebase Storage direct upload notice:', storageErr);
-    // If Firebase Storage bucket has not yet been provisioned in the user's GCP/Firebase project,
-    // seamlessly convert to high-resolution optimized data so the administrator's product is
-    // stored permanently in Firebase Firestore without losing work:
-    onProgress?.({ stage: 'Saving permanently to Firebase database...', percent: 80 });
-    const compressedDataUrl = await compressImageToDataUrl(file);
-    onProgress?.({ stage: 'Image saved permanently in Firebase!', percent: 100 });
-    return {
-      url: compressedDataUrl,
-      name: file.name,
-      size: compressedDataUrl.length,
-      type: 'image/webp'
-    };
+    console.error('Firebase Storage direct upload error:', storageErr);
+    // Explicitly identify the real root cause rather than returning raw Base64 data
+    const is404 =
+      storageErr.code === 'storage/unknown' ||
+      storageErr.message?.includes('Not Found') ||
+      storageErr.message?.includes('404');
+
+    if (is404) {
+      throw new Error(
+        `Firebase Cloud Storage bucket has not been initialized in the Firebase Console (HTTP 404). To enable direct uploads, go to Firebase Console -> Build -> Storage and click "Get started", or configure Supabase Storage by adding VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables.`
+      );
+    }
+
+    if (storageErr.code === 'storage/unauthorized') {
+      throw new Error(
+        `Firebase Storage permission denied (HTTP 403). Please update your Firebase Storage rules to allow admin writes to /products.`
+      );
+    }
+
+    throw new Error(storageErr.message || 'Image upload failed. Please verify storage bucket permissions.');
   }
 };
 

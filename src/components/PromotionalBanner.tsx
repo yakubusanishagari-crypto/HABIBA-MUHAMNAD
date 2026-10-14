@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Sparkles, Tag, ShieldCheck, Zap } from 'lucide-react';
+import { ArrowRight, Tag, ShieldCheck, Zap } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 
 interface PromotionalBannerProps {
@@ -35,7 +35,6 @@ export const PromotionalBanner: React.FC<PromotionalBannerProps> = ({
                     ? 'عروض وتخفيضات حصرية لجميع الأقسام'
                     : 'EXCLUSIVE STOREWIDE PROMOTION'}
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
               </div>
 
               {/* Headline */}
@@ -79,12 +78,10 @@ export const PromotionalBanner: React.FC<PromotionalBannerProps> = ({
                   <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                   <span>{language === 'ha' ? 'Isarwa Cikin Hanzari' : language === 'ar' ? 'شحن فوري' : 'Express Dispatch'}</span>
                 </div>
-                <span className="text-slate-600">•</span>
                 <div className="flex items-center gap-1.5 text-emerald-300">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                   <span>{language === 'ha' ? 'Kayan Asali 100%' : language === 'ar' ? 'أصلي ومفحوص 100%' : '100% Inspected Authentic'}</span>
                 </div>
-                <span className="text-slate-600">•</span>
                 <div className="flex items-center gap-1.5 text-amber-200">
                   <span>{language === 'ha' ? 'Sabbin Zubi na 2026' : language === 'ar' ? 'أحدث موديلات 2026' : 'New Season Drops'}</span>
                 </div>

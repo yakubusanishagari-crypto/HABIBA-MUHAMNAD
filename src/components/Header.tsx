@@ -4,7 +4,7 @@ import {
   Menu,
   X,
   ChevronDown,
-  MessageCircle,
+  Phone,
   Search,
   ArrowRight,
   Heart,
@@ -18,7 +18,6 @@ import {
   Layers
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
-import { createGeneralWhatsAppUrl } from '../utils/formatters';
 import { Language } from '../types';
 
 interface HeaderProps {
@@ -49,6 +48,20 @@ export const Header: React.FC<HeaderProps> = ({
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dropdownContainerRef = useRef<HTMLDivElement>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
+
+  // Lock body scroll and prevent sideways drag when mobile drawer is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      const prevOverflow = document.body.style.overflow;
+      const prevTouchAction = document.body.style.touchAction;
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+        document.body.style.touchAction = prevTouchAction;
+      };
+    }
+  }, [mobileMenuOpen]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -102,11 +115,6 @@ export const Header: React.FC<HeaderProps> = ({
     setMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const whatsappChatUrl = createGeneralWhatsAppUrl(
-    settings.whatsapp_number,
-    'Hello Habeevatussunnah Online Business, I would like to make an inquiry.'
-  );
 
   // Six specified categories under PRODUCT
   const productSubcategoriesList = [
@@ -186,7 +194,7 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </button>
 
-          {/* ACTION UTILITIES RIGHT (LANGUAGE SELECTOR, SEARCH, WISHLIST, WHATSAPP, CART, MENU TOGGLE) */}
+          {/* ACTION UTILITIES RIGHT (LANGUAGE SELECTOR, SEARCH, WISHLIST, CART, MENU TOGGLE) */}
           <div className="flex items-center gap-2 sm:gap-3">
             {/* MULTILINGUAL SELECTOR DROPDOWN (DESKTOP & TABLET) */}
             <div className="relative" ref={langMenuRef}>
@@ -256,18 +264,6 @@ export const Header: React.FC<HeaderProps> = ({
                 )}
               </button>
             )}
-
-            {/* WHATSAPP ACTION BUTTON */}
-            <a
-              href={whatsappChatUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2.5 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/60 rounded-full transition-colors flex items-center justify-center"
-              title="Direct WhatsApp (+2348034343283)"
-              aria-label="WhatsApp Support"
-            >
-              <MessageCircle className="w-5 h-5 fill-current" />
-            </a>
 
             {/* CART ICON WITH QUANTITY BADGE */}
             <button
@@ -530,7 +526,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* 3. MOBILE SLIDE-OVER DRAWER (ACCESSIBLE EXACT 10-ITEM SEQUENCE + PRODUCT SUBCATEGORIES) */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[60] flex">
+        <div className="fixed inset-0 z-[60] flex overflow-hidden overscroll-none touch-none">
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm"
@@ -538,7 +534,7 @@ export const Header: React.FC<HeaderProps> = ({
           />
 
           {/* Drawer content */}
-          <div className="relative bg-[#07132B] text-white border-r border-blue-900/80 w-full max-w-sm h-full p-5 sm:p-6 shadow-2xl flex flex-col justify-between overflow-y-auto z-10 animate-in slide-in-from-left duration-200">
+          <div className="relative bg-[#07132B] text-white border-r border-blue-900/80 w-full max-w-sm h-full p-5 sm:p-6 shadow-2xl flex flex-col justify-between overflow-y-auto overscroll-contain touch-pan-y z-10 animate-in slide-in-from-left duration-200">
             <div className="space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-blue-900/60">
                 <div className="flex items-center gap-2.5">
@@ -663,7 +659,7 @@ export const Header: React.FC<HeaderProps> = ({
                           onClick={() => handleCategorySelect(cat.id, undefined, cat.gender)}
                           className="w-full text-left text-xs font-bold text-slate-300 py-1.5 px-2 hover:bg-white/10 rounded-lg hover:text-white flex items-center justify-between cursor-pointer"
                         >
-                          <span className="truncate">• {cat.label}</span>
+                          <span className="truncate">{cat.label}</span>
                           <span className="text-[10px] text-sky-300 font-semibold">{cat.desc.slice(0, 16)}...</span>
                         </button>
                       ))}
@@ -751,15 +747,14 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Mobile Drawer Footer Support */}
             <div className="pt-5 border-t border-blue-900/60 space-y-2.5">
-              <a
-                href={whatsappChatUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-black text-xs uppercase tracking-wider shadow-md transition-colors"
+              <button
+                type="button"
+                onClick={() => handleNavigate('contact')}
+                className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-xl font-black text-xs uppercase tracking-wider shadow-md transition-colors cursor-pointer"
               >
-                <MessageCircle className="w-4 h-4 fill-current" />
-                <span>Chat on WhatsApp (+2348034343283)</span>
-              </a>
+                <Phone className="w-4 h-4 text-emerald-400" />
+                <span>Contact Customer Care</span>
+              </button>
               <div className="text-center text-[11px] text-slate-400 font-medium">
                 Customer Care: {settings.phone_number} / {settings.secondary_phone}
               </div>

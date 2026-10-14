@@ -302,21 +302,28 @@ export const ProductImageUploader: React.FC<ProductImageUploaderProps> = ({
 
       {/* Manual URL Input dropdown */}
       {showUrlInput && (
-        <form onSubmit={handleAddManualUrl} className="flex gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+        <div className="flex gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
           <input
             type="url"
             value={manualUrl}
             onChange={e => setManualUrl(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddManualUrl(e);
+              }
+            }}
             placeholder="Paste direct image link (e.g. https://... or Unsplash)"
             className="flex-1 px-3 py-1.5 text-xs bg-white rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           />
           <button
-            type="submit"
+            type="button"
+            onClick={handleAddManualUrl}
             className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer"
           >
             Add Link
           </button>
-        </form>
+        </div>
       )}
 
       {/* Image Previews Gallery Grid */}

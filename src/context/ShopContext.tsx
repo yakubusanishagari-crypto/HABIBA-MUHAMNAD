@@ -16,8 +16,9 @@ import {
   HeroBackgroundOption
 } from '../types';
 import { HERO_BACKGROUND_CONFIGS } from '../data/heroBackgrounds';
-import { LocalDatabaseService } from '../lib/supabase';
+import { LocalDatabaseService, isSupabaseConfigured } from '../lib/supabase';
 import { FirebaseDatabaseService } from '../lib/firebaseDatabase';
+import { SupabaseDatabaseService } from '../lib/supabaseDatabase';
 import { testConnection } from '../lib/firebase';
 import { verifyAdminPassword, updateAdminPassword as updateAdminPasswordSec, resetAdminPasswordToDefault } from '../utils/security';
 import { TRANSLATIONS } from '../utils/translations';
@@ -189,18 +190,41 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setContactMessages(loadedMessages);
     setLoading(false);
 
-    // Seed Firestore collections if empty
-    FirebaseDatabaseService.seedInitialDataIfEmpty().catch(err => {
-      console.warn('Initial Firebase seeding warning:', err);
-    });
+    // Seed collections / tables if empty
+    if (isSupabaseConfigured) {
+      SupabaseDatabaseService.seedInitialDataIfEmpty().catch(err => {
+        console.warn('Initial Supabase seeding notice:', err);
+      });
+    } else {
+      FirebaseDatabaseService.seedInitialDataIfEmpty().catch(err => {
+        console.warn('Initial Firebase seeding warning:', err);
+      });
+    }
 
-    // Real-time Firestore subscriptions
-    const unsubSettings = FirebaseDatabaseService.subscribeToSettings(setSettings);
-    const unsubCategories = FirebaseDatabaseService.subscribeToCategories(setCategories);
-    const unsubSubcategories = FirebaseDatabaseService.subscribeToSubcategories(setSubcategories);
-    const unsubProducts = FirebaseDatabaseService.subscribeToProducts(setProducts);
-    const unsubOrders = FirebaseDatabaseService.subscribeToOrders(setOrders);
-    const unsubMessages = FirebaseDatabaseService.subscribeToContactMessages(setContactMessages);
+    // Real-time subscriptions (Supabase Realtime or Firebase Firestore)
+    const unsubSettings = isSupabaseConfigured
+      ? SupabaseDatabaseService.subscribeToSettings(setSettings)
+      : FirebaseDatabaseService.subscribeToSettings(setSettings);
+
+    const unsubCategories = isSupabaseConfigured
+      ? SupabaseDatabaseService.subscribeToCategories(setCategories)
+      : FirebaseDatabaseService.subscribeToCategories(setCategories);
+
+    const unsubSubcategories = isSupabaseConfigured
+      ? () => {}
+      : FirebaseDatabaseService.subscribeToSubcategories(setSubcategories);
+
+    const unsubProducts = isSupabaseConfigured
+      ? SupabaseDatabaseService.subscribeToProducts(setProducts)
+      : FirebaseDatabaseService.subscribeToProducts(setProducts);
+
+    const unsubOrders = isSupabaseConfigured
+      ? SupabaseDatabaseService.subscribeToOrders(setOrders)
+      : FirebaseDatabaseService.subscribeToOrders(setOrders);
+
+    const unsubMessages = isSupabaseConfigured
+      ? () => {}
+      : FirebaseDatabaseService.subscribeToContactMessages(setContactMessages);
 
     return () => {
       unsubSettings();
@@ -367,10 +391,16 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Save in local storage engine
     LocalDatabaseService.addOrder(newOrder);
 
-    // Sync to Firebase Firestore asynchronously
-    FirebaseDatabaseService.createOrder(newOrder).catch(err => {
-      console.warn('Firebase createOrder sync notice:', err);
-    });
+    // Sync to backend (Supabase or Firebase Firestore)
+    if (isSupabaseConfigured) {
+      SupabaseDatabaseService.createOrder(newOrder).catch(err => {
+        console.warn('Supabase createOrder sync notice:', err);
+      });
+    } else {
+      FirebaseDatabaseService.createOrder(newOrder).catch(err => {
+        console.warn('Firebase createOrder sync notice:', err);
+      });
+    }
 
     // Refresh products state with updated stock
     const updatedProducts = LocalDatabaseService.getProducts();
@@ -384,7 +414,12 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const getOrderById = (orderId: string): Order | undefined => {
-    return orders.find(o => o.id.trim().toUpperCase() === orderId.trim().toUpperCase());
+    if (!orderId) return undefined;
+    const cleanId = orderId.trim().toUpperCase();
+    return orders.find(o =>
+      o.id.trim().toUpperCase() === cleanId ||
+      ((o as any).order_number && (o as any).order_number.trim().toUpperCase() === cleanId)
+    );
   };
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus): Promise<boolean> => {
@@ -393,9 +428,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setOrders(prev =>
         prev.map(o => (o.id === orderId ? { ...o, order_status: status, updated_at: new Date().toISOString() } : o))
       );
-      FirebaseDatabaseService.updateOrderStatus(orderId, status).catch(err => {
-        console.warn('Firebase updateOrderStatus sync notice:', err);
-      });
+      if (isSupabaseConfigured) {
+        SupabaseDatabaseService.updateOrderStatus(orderId, status).catch(err => {
+          console.warn('Supabase updateOrderStatus sync notice:', err);
+        });
+      } else {
+        FirebaseDatabaseService.updateOrderStatus(orderId, status).catch(err => {
+          console.warn('Firebase updateOrderStatus sync notice:', err);
+        });
+      }
       showToast(`Order status updated to "${status}"`, 'success');
       return true;
     }
@@ -415,9 +456,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return o;
         })
       );
-      FirebaseDatabaseService.updatePaymentStatus(orderId, status, tracking_stage).catch(err => {
-        console.warn('Firebase updatePaymentStatus sync notice:', err);
-      });
+      if (isSupabaseConfigured) {
+        SupabaseDatabaseService.updatePaymentStatus(orderId, status, tracking_stage).catch(err => {
+          console.warn('Supabase updatePaymentStatus sync notice:', err);
+        });
+      } else {
+        FirebaseDatabaseService.updatePaymentStatus(orderId, status, tracking_stage).catch(err => {
+          console.warn('Firebase updatePaymentStatus sync notice:', err);
+        });
+      }
       showToast(`Payment status updated to "${status}"`, 'success');
       return true;
     }
@@ -446,9 +493,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return o;
         })
       );
-      FirebaseDatabaseService.updateOrderTrackingStage(orderId, stage, nextOrderStatus).catch(err => {
-        console.warn('Firebase updateOrderTrackingStage sync notice:', err);
-      });
+      if (isSupabaseConfigured) {
+        SupabaseDatabaseService.updateOrderTrackingStage(orderId, stage, nextOrderStatus).catch(err => {
+          console.warn('Supabase updateOrderTrackingStage sync notice:', err);
+        });
+      } else {
+        FirebaseDatabaseService.updateOrderTrackingStage(orderId, stage, nextOrderStatus).catch(err => {
+          console.warn('Firebase updateOrderTrackingStage sync notice:', err);
+        });
+      }
       showToast(`Tracking stage updated to "${stage}"`, 'success');
       return true;
     }
@@ -468,9 +521,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updated = [newProduct, ...current];
     LocalDatabaseService.saveProducts(updated);
     setProducts(updated);
-    FirebaseDatabaseService.saveProduct(newProduct).catch(err => {
-      console.warn('Firebase saveProduct sync notice:', err);
-    });
+    if (isSupabaseConfigured) {
+      SupabaseDatabaseService.saveProduct(newProduct).catch(err => {
+        console.warn('Supabase saveProduct sync notice:', err);
+      });
+    } else {
+      FirebaseDatabaseService.saveProduct(newProduct).catch(err => {
+        console.warn('Firebase saveProduct sync notice:', err);
+      });
+    }
     showToast(`Product "${newProduct.name}" created successfully!`, 'success');
     return newProduct;
   };
@@ -483,9 +542,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       current[idx] = updatedProduct;
       LocalDatabaseService.saveProducts(current);
       setProducts([...current]);
-      FirebaseDatabaseService.saveProduct(updatedProduct).catch(err => {
-        console.warn('Firebase updateProduct sync notice:', err);
-      });
+      if (isSupabaseConfigured) {
+        SupabaseDatabaseService.saveProduct(updatedProduct).catch(err => {
+          console.warn('Supabase updateProduct sync notice:', err);
+        });
+      } else {
+        FirebaseDatabaseService.saveProduct(updatedProduct).catch(err => {
+          console.warn('Firebase updateProduct sync notice:', err);
+        });
+      }
       showToast(`Product "${product.name}" updated successfully!`, 'success');
       return true;
     }
@@ -497,9 +562,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const filtered = current.filter(p => p.id !== productId);
     LocalDatabaseService.saveProducts(filtered);
     setProducts(filtered);
-    FirebaseDatabaseService.deleteProduct(productId).catch(err => {
-      console.warn('Firebase deleteProduct sync notice:', err);
-    });
+    if (isSupabaseConfigured) {
+      SupabaseDatabaseService.deleteProduct(productId).catch(err => {
+        console.warn('Supabase deleteProduct sync notice:', err);
+      });
+    } else {
+      FirebaseDatabaseService.deleteProduct(productId).catch(err => {
+        console.warn('Firebase deleteProduct sync notice:', err);
+      });
+    }
     showToast('Product deleted from inventory', 'info');
     return true;
   };
@@ -512,9 +583,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       product.updated_at = new Date().toISOString();
       LocalDatabaseService.saveProducts(current);
       setProducts([...current]);
-      FirebaseDatabaseService.saveProduct(product).catch(err => {
-        console.warn('Firebase updateInventory sync notice:', err);
-      });
+      if (isSupabaseConfigured) {
+        SupabaseDatabaseService.saveProduct(product).catch(err => {
+          console.warn('Supabase updateInventory sync notice:', err);
+        });
+      } else {
+        FirebaseDatabaseService.saveProduct(product).catch(err => {
+          console.warn('Firebase updateInventory sync notice:', err);
+        });
+      }
       showToast(`Stock updated to ${product.stock}`, 'success');
       return true;
     }
@@ -601,9 +678,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem('habeevat_hero_background', newSettings.hero_background);
       }
       setSettings(newSettings);
-      FirebaseDatabaseService.updateSettings(newSettings).catch(err => {
-        console.warn('Firebase updateSettings sync notice:', err);
-      });
+      if (isSupabaseConfigured) {
+        SupabaseDatabaseService.saveSettings(newSettings).catch(err => {
+          console.warn('Supabase updateSettings sync notice:', err);
+        });
+      } else {
+        FirebaseDatabaseService.updateSettings(newSettings).catch(err => {
+          console.warn('Firebase updateSettings sync notice:', err);
+        });
+      }
       showToast('Store settings permanently saved!', 'success');
       return true;
     } catch (e) {
@@ -618,9 +701,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updated: SiteSettings = { ...settings, background_theme: theme };
       setSettings(updated);
       LocalDatabaseService.saveSettings(updated);
-      FirebaseDatabaseService.updateSettings(updated).catch(err => {
-        console.warn('Firebase theme sync notice:', err);
-      });
+      if (isSupabaseConfigured) {
+        SupabaseDatabaseService.saveSettings(updated).catch(err => {
+          console.warn('Supabase theme sync notice:', err);
+        });
+      } else {
+        FirebaseDatabaseService.updateSettings(updated).catch(err => {
+          console.warn('Firebase theme sync notice:', err);
+        });
+      }
       showToast(`Background theme "${theme.toUpperCase()}" permanently applied!`, 'success');
       return true;
     } catch (e) {
@@ -635,9 +724,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updated: SiteSettings = { ...settings, hero_background: heroBg };
       setSettings(updated);
       LocalDatabaseService.saveSettings(updated);
-      FirebaseDatabaseService.updateSettings(updated).catch(err => {
-        console.warn('Firebase hero background sync notice:', err);
-      });
+      if (isSupabaseConfigured) {
+        SupabaseDatabaseService.saveSettings(updated).catch(err => {
+          console.warn('Supabase hero background sync notice:', err);
+        });
+      } else {
+        FirebaseDatabaseService.updateSettings(updated).catch(err => {
+          console.warn('Firebase hero background sync notice:', err);
+        });
+      }
       const bgName = HERO_BACKGROUND_CONFIGS[heroBg]?.name || heroBg;
       showToast(`Hero background "${bgName}" permanently applied!`, 'success');
       return true;

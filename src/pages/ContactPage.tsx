@@ -8,7 +8,6 @@ import {
   Clock,
   ShieldCheck,
   Mail,
-  Sparkles,
   ExternalLink,
   AlertCircle
 } from 'lucide-react';
@@ -86,7 +85,7 @@ export const ContactPage: React.FC = () => {
         {/* Header Section */}
         <div className="text-center space-y-3">
           <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black uppercase tracking-wider">
-            <Sparkles className="w-3 h-3 text-emerald-700" />
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
             {language === 'ha'
               ? 'SADARWA DA ABOKAN CINIKI'
               : language === 'ar'
@@ -114,7 +113,6 @@ export const ContactPage: React.FC = () => {
                     ? 'قنوات التواصل الرسمية'
                     : 'Official Business Channels'}
                 </span>
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               </h3>
 
               {/* Phone Line 1 & 2: Clickable */}

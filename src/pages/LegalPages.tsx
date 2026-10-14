@@ -16,7 +16,6 @@ import {
   MapPin,
   CreditCard,
   Package,
-  Sparkles,
   ExternalLink
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
@@ -186,8 +185,7 @@ export const LegalPages: React.FC<LegalPagesProps> = ({ type, onNavigate }) => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div className="space-y-4 max-w-3xl">
-              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-amber-300 font-black text-xs uppercase tracking-wider border border-white/15">
-                <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+              <span className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-amber-300 font-black text-xs uppercase tracking-wider border border-white/15">
                 <span>
                   {language === 'ar'
                     ? meta.badgeAr

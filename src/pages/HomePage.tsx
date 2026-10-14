@@ -10,14 +10,12 @@ import {
   ArrowRight,
   ShieldCheck,
   Heart,
-  MessageCircle,
   Truck,
   ChevronLeft,
   ChevronRight,
   Package,
   Layers
 } from 'lucide-react';
-import { createGeneralWhatsAppUrl } from '../utils/formatters';
 
 interface HomePageProps {
   onViewProduct: (product: Product) => void;
@@ -95,13 +93,8 @@ export const HomePage: React.FC<HomePageProps> = ({
     }
   };
 
-  const whatsappUrl = createGeneralWhatsAppUrl(
-    settings.whatsapp_number,
-    'Hello Habeevatussunnah Online Business! I would like to inquire about placing an order.'
-  );
-
   return (
-    <div className="space-y-0 antialiased transform-gpu">
+    <div className="space-y-0 antialiased transform-gpu w-full max-w-full overflow-x-hidden">
       {/* 1. High-End Fashion Hero Section */}
       <div className="relative transform-gpu">
         <HeroBanner
@@ -114,6 +107,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             onSelectCategory(catId, gender);
             onNavigate('products');
           }}
+          onNavigate={onNavigate}
         />
       </div>
 
@@ -123,6 +117,11 @@ export const HomePage: React.FC<HomePageProps> = ({
           onScrollToCategories={() => {
             const el = document.getElementById('featured-categories');
             el?.scrollIntoView({ behavior: 'smooth' });
+          }}
+          onNavigate={onNavigate}
+          onSelectCategory={(catId, gender) => {
+            onSelectCategory(catId, gender);
+            onNavigate('products');
           }}
         />
       </div>
@@ -146,7 +145,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       </div>
 
       {/* 5. New Arrivals Section: HORIZONTALLY SCROLLABLE CAROUSEL */}
-      <section className="py-16 sm:py-20 bg-white border-b border-slate-100 relative">
+      <section className="py-16 sm:py-20 bg-white border-b border-slate-100 relative overflow-hidden w-full max-w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header & Carousel Arrow Controls */}
           <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-8 sm:mb-10 gap-4">
@@ -216,8 +215,8 @@ export const HomePage: React.FC<HomePageProps> = ({
           {newArrivals.length > 0 ? (
             <div
               ref={carouselRef}
-              className="overflow-x-auto scroll-smooth snap-x snap-mandatory flex gap-4 sm:gap-6 pb-4 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              className="overflow-x-auto scroll-smooth snap-x snap-mandatory flex gap-4 sm:gap-6 pb-4 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none overscroll-x-contain"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}
             >
               {newArrivals.map(product => (
                 <div
@@ -250,7 +249,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* 6. Featured Products Section: SHOWING AVAILABLE PRODUCTS ONLY */}
-      <section className="py-16 sm:py-20 bg-slate-50/70 border-b border-slate-200/80">
+      <section className="py-16 sm:py-20 bg-slate-50/70 border-b border-slate-200/80 overflow-hidden w-full max-w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-baseline justify-between mb-8 sm:mb-10 gap-3">
             <div>
@@ -318,15 +317,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                 >
                   Explore All Collections
                 </button>
-                <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => onNavigate('contact')}
                   className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs uppercase tracking-wider rounded-xl transition-colors cursor-pointer inline-flex items-center gap-1.5"
                 >
-                  <MessageCircle className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>WhatsApp Inquiries</span>
-                </a>
+                  <span>Customer Support Desk</span>
+                </button>
               </div>
             </div>
           )}
@@ -334,7 +330,7 @@ export const HomePage: React.FC<HomePageProps> = ({
       </section>
 
       {/* 7. Promotional VIP Concierge Banner */}
-      <section className="py-16 bg-gradient-to-br from-[#064E3B] via-[#043327] to-[#021F17] text-white relative overflow-hidden">
+      <section className="py-16 bg-gradient-to-br from-[#064E3B] via-[#043327] to-[#021F17] text-white relative overflow-hidden w-full max-w-full">
         <div className="absolute top-0 right-0 -mr-24 -mt-24 w-96 h-96 rounded-full bg-amber-400/10 blur-3xl pointer-events-none" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="p-8 sm:p-12 rounded-3xl bg-white/5 backdrop-blur-md border border-white/10 flex flex-col lg:flex-row items-center justify-between gap-8 shadow-2xl">
@@ -343,10 +339,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                 Personalized Service & Trust
               </span>
               <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-white font-sans">
-                Direct WhatsApp Order Fulfillment & Fast Nationwide Dispatch
+                Verified Modest Fashion & Rapid Nationwide Doorstep Delivery
               </h3>
               <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed font-normal">
-                Shop with confidence. Browse our boutique, select your sizes, and experience smooth bank transfer checkout with instant verification on WhatsApp. Our customer support desk is active and ready to assist you.
+                Shop with confidence. Browse our boutique, select your sizes, and experience smooth bank transfer checkout with instant verification. Our customer support desk and tracking portal keep you informed at every step.
               </p>
             </div>
 
@@ -357,15 +353,13 @@ export const HomePage: React.FC<HomePageProps> = ({
               >
                 Shop All Collections
               </button>
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => onNavigate('order-lookup')}
                 className="px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider shadow-md text-center transition-all inline-flex items-center justify-center gap-2 cursor-pointer"
               >
-                <MessageCircle className="w-4 h-4 fill-current text-amber-300" />
-                <span>Chat on WhatsApp</span>
-              </a>
+                <Package className="w-4 h-4 text-amber-300" />
+                <span>Track Your Order</span>
+              </button>
             </div>
           </div>
         </div>

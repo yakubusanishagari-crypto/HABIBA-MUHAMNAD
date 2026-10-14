@@ -175,10 +175,10 @@ const AppContent: React.FC = () => {
   }, [settings.background_theme]);
 
   return (
-    <div className={`min-h-screen flex flex-col ${themeBackgroundClass} selection:bg-emerald-700 selection:text-white transition-colors duration-300`}>
+    <div className={`min-h-screen w-full max-w-full overflow-x-hidden flex flex-col ${themeBackgroundClass} selection:bg-emerald-700 selection:text-white transition-colors duration-300`}>
       {/* Toast Notification Container */}
       {toastMessage && (
-        <div className="fixed top-20 right-4 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border text-xs font-bold animate-in fade-in slide-in-from-top-4 duration-200 bg-white border-slate-200 text-slate-800">
+        <div className="fixed top-20 right-4 z-[100] flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-2xl border text-xs font-bold animate-in fade-in slide-in-from-top-4 duration-200 bg-white border-slate-200 text-slate-800 ring-1 ring-slate-900/5">
           {toastMessage.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />}
           {toastMessage.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
           {toastMessage.type === 'info' && <Info className="w-4 h-4 text-blue-600 shrink-0" />}
@@ -200,7 +200,7 @@ const AppContent: React.FC = () => {
       )}
 
       {/* Main Routing Views */}
-      <main className="flex-1">
+      <main className="flex-1 w-full max-w-full overflow-x-hidden">
         {currentView === 'home' && (
           <HomePage
             onViewProduct={handleViewProduct}
@@ -209,6 +209,7 @@ const AppContent: React.FC = () => {
               setSelectedCategory(catId);
               if (gender) setSelectedGender(gender);
               else setSelectedGender('all');
+              setCurrentView('products');
             }}
           />
         )}

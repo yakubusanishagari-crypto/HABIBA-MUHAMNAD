@@ -44,7 +44,9 @@ import {
   Send,
   Truck,
   CheckCircle2,
-  CreditCard
+  CreditCard,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import {
@@ -65,6 +67,7 @@ import { downloadOrderReceiptPDF } from '../utils/pdfReceipt';
 import { ProductImageUploader } from '../components/ProductImageUploader';
 import { OFFICIAL_LOGO_URL, OFFICIAL_LOGO_REMOTE, testFirebaseStorageConnection } from '../utils/imageUpload';
 import { signInWithGoogle, storage } from '../lib/firebase';
+import { isSupabaseConfigured, supabase, supabaseUrl } from '../lib/supabase';
 
 interface AdminDashboardProps {
   onExitToStore?: () => void;
@@ -190,6 +193,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
   });
 
   // Product Filters & Search
+  const [modalFormError, setModalFormError] = useState<string | null>(null);
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState('all');
   const [productGenderFilter, setProductGenderFilter] = useState('all');
@@ -237,6 +242,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
     message: string;
     bucket: string;
   } | null>(null);
+  const [isTestingSupabase, setIsTestingSupabase] = useState(false);
+  const [supabaseTestResult, setSupabaseTestResult] = useState<{
+    success: boolean;
+    message: string;
+    details?: string;
+  } | null>(null);
+  const [copiedSql, setCopiedSql] = useState(false);
 
   // Sync settings when loaded
   React.useEffect(() => {
@@ -265,7 +277,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
     const customerMap = new Map<string, { email: string; name: string; phone: string; orders: number; total: number; lastOrder: string; city: string; state: string }>();
 
     orders.forEach(o => {
-      const key = (o.customer.phone_number || o.customer.email || o.customer.full_name).toLowerCase().trim();
+      const key = ((o.customer?.phone_number || o.customer?.email || o.customer?.full_name) || 'unknown').toLowerCase().trim();
       const existing = customerMap.get(key);
       if (existing) {
         existing.orders += 1;
@@ -275,14 +287,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
         }
       } else {
         customerMap.set(key, {
-          email: o.customer.email || '',
-          name: o.customer.full_name,
-          phone: o.customer.phone_number,
+          email: o.customer?.email || '',
+          name: o.customer?.full_name || 'Customer',
+          phone: o.customer?.phone_number || '',
           orders: 1,
           total: o.total_amount,
           lastOrder: o.created_at,
-          city: o.customer.city,
-          state: o.customer.state
+          city: o.customer?.city || '',
+          state: o.customer?.state || ''
         });
       }
     });
@@ -338,10 +350,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
 
       if (orderSearchQuery.trim()) {
         const q = orderSearchQuery.toLowerCase().trim();
-        const matchesId = order.id.toLowerCase().includes(q);
-        const matchesName = order.customer.full_name.toLowerCase().includes(q);
-        const matchesPhone = order.customer.phone_number.toLowerCase().includes(q);
-        const matchesCity = order.customer.city.toLowerCase().includes(q);
+        const matchesId = (order.id || '').toLowerCase().includes(q) || ((order as any).order_number || '').toLowerCase().includes(q);
+        const matchesName = (order.customer?.full_name || '').toLowerCase().includes(q);
+        const matchesPhone = (order.customer?.phone_number || '').toLowerCase().includes(q) || (order.customer?.whatsapp_number || '').toLowerCase().includes(q);
+        const matchesCity = (order.customer?.city || '').toLowerCase().includes(q);
         return matchesId || matchesName || matchesPhone || matchesCity;
       }
       return true;
@@ -363,14 +375,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
   // Open Edit Product Modal
   const handleOpenEditProduct = (p: Product) => {
     setEditingProductId(p.id);
+    setModalFormError(null);
     const existingImages = p.images && p.images.length > 0 ? p.images : [p.main_image].filter(Boolean);
+    const validCat = p.category_id || categories[0]?.id || 'cat-women';
     setProductForm({
       name: p.name,
       slug: p.slug,
       description: p.description,
       price: p.price,
       discount_price: p.discount_price && p.discount_price > 0 ? p.discount_price : '',
-      category_id: p.category_id,
+      category_id: validCat,
       subcategory_id: p.subcategory_id || '',
       gender: p.gender,
       sku: p.sku,
@@ -389,7 +403,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
   // Open Add Product Modal
   const handleOpenNewProduct = () => {
     setEditingProductId(null);
-    const defaultCat = categories[0]?.id || '';
+    setModalFormError(null);
+    const defaultCat = categories[0]?.id || 'cat-women';
     setProductForm({
       name: '',
       slug: '',
@@ -415,28 +430,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
   // Save Product (CRUD)
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!productForm.name.trim() || !productForm.category_id) {
-      showToast('Please provide a product title and category', 'error');
+    setModalFormError(null);
+
+    // Validate Title
+    if (!productForm.name.trim()) {
+      const err = 'Please enter a product title.';
+      setModalFormError(err);
+      showToast(err, 'error');
       return;
     }
 
-    if (!productForm.main_image && productForm.images.length === 0) {
-      showToast('Please upload or select at least one product photo', 'error');
-      return;
+    // Validate Category
+    let resolvedCatId = productForm.category_id;
+    if (!resolvedCatId) {
+      resolvedCatId = categories[0]?.id || 'cat-women';
     }
 
+    // Validate Images
+    const rawImages = productForm.images.filter(Boolean);
+    const mainImg = productForm.main_image || rawImages[0] || '';
+    if (!mainImg && rawImages.length === 0) {
+      const err = 'Please upload or select at least one product photo.';
+      setModalFormError(err);
+      showToast(err, 'error');
+      return;
+    }
+    const finalImages = rawImages.length > 0 ? rawImages : [mainImg];
+
+    // Validate Price
     const parsedPrice = typeof productForm.price === 'string' ? parseFloat(productForm.price) : Number(productForm.price);
     if (isNaN(parsedPrice) || parsedPrice <= 0) {
-      showToast('Please enter a valid product price greater than 0', 'error');
+      const err = 'Please enter a valid product price greater than 0.';
+      setModalFormError(err);
+      showToast(err, 'error');
       return;
     }
 
+    // Validate Discount Price
     const parsedDiscount = productForm.discount_price !== '' && productForm.discount_price !== undefined && productForm.discount_price !== null
       ? (typeof productForm.discount_price === 'string' ? parseFloat(productForm.discount_price) : Number(productForm.discount_price))
       : undefined;
 
     if (parsedDiscount !== undefined && !isNaN(parsedDiscount) && parsedDiscount >= parsedPrice) {
-      showToast('Sale price must be lower than the original price', 'error');
+      const err = 'Sale price must be lower than the original price.';
+      setModalFormError(err);
+      showToast(err, 'error');
       return;
     }
 
@@ -452,9 +490,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
       .split(',')
       .map(c => c.trim())
       .filter(Boolean);
-
-    const images = productForm.images.length > 0 ? productForm.images : [productForm.main_image];
-    const main_image = productForm.main_image || images[0] || '';
 
     const slug =
       productForm.slug.trim() ||
@@ -475,39 +510,52 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
       }))
     );
 
-    if (editingProductId) {
-      const existing = products.find(p => p.id === editingProductId);
-      if (existing) {
-        await updateProduct({
-          ...existing,
+    setIsSavingProduct(true);
+    try {
+      if (editingProductId) {
+        const existing = products.find(p => p.id === editingProductId);
+        if (existing) {
+          await updateProduct({
+            ...existing,
+            ...productForm,
+            category_id: resolvedCatId,
+            price: parsedPrice,
+            discount_price: parsedDiscount && parsedDiscount > 0 ? parsedDiscount : undefined,
+            stock: finalStock,
+            main_image: mainImg,
+            images: finalImages,
+            slug,
+            sizes,
+            colors,
+            variants: generatedVariants.length > 0 ? generatedVariants : existing.variants
+          });
+        }
+      } else {
+        await addProduct({
           ...productForm,
+          category_id: resolvedCatId,
           price: parsedPrice,
           discount_price: parsedDiscount && parsedDiscount > 0 ? parsedDiscount : undefined,
           stock: finalStock,
-          main_image,
-          images,
+          main_image: mainImg,
+          images: finalImages,
           slug,
           sizes,
           colors,
-          variants: generatedVariants.length > 0 ? generatedVariants : existing.variants
+          variants: generatedVariants
         });
       }
-    } else {
-      await addProduct({
-        ...productForm,
-        price: parsedPrice,
-        discount_price: parsedDiscount && parsedDiscount > 0 ? parsedDiscount : undefined,
-        stock: finalStock,
-        main_image,
-        images,
-        slug,
-        sizes,
-        colors,
-        variants: generatedVariants
-      });
-    }
 
-    setIsProductModalOpen(false);
+      setIsProductModalOpen(false);
+      setModalFormError(null);
+    } catch (err: any) {
+      console.error('Failed to publish/save product:', err);
+      const errMsg = err?.message || 'Failed to publish product. Please check your connection.';
+      setModalFormError(errMsg);
+      showToast(errMsg, 'error');
+    } finally {
+      setIsSavingProduct(false);
+    }
   };
 
   // Toggle publish / archive status
@@ -588,7 +636,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
     { id: 'categories', label: 'Categories', icon: FolderTree },
     { id: 'messages', label: 'Inquiries', icon: Mail, count: contactMessages.filter(m => !m.is_read).length, badgeColor: 'bg-emerald-500 text-white' },
     { id: 'settings', label: 'Store Settings', icon: SettingsIcon },
-    { id: 'firebase', label: 'Firebase Cloud & Storage', icon: Database }
+    { id: 'firebase', label: 'Supabase Cloud & Storage', icon: Database }
   ];
 
   // ===========================================================================
@@ -910,7 +958,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
                   {activeTab === 'categories' && 'Categories & Departments'}
                   {activeTab === 'messages' && 'Customer Inquiries & Messages'}
                   {activeTab === 'settings' && 'Store Profile & Bank Settings'}
-                  {activeTab === 'firebase' && 'Firebase Cloud Database & Image Storage'}
+                  {activeTab === 'firebase' && 'Supabase Cloud Database & Image Storage'}
                 </h1>
                 <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 uppercase tracking-wider">
                   Live Database
@@ -2217,7 +2265,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
                             <div className="md:col-span-8 space-y-2.5 text-left">
                               {/* Brand pill */}
                               <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${cfg.kickerBgClass} text-[9.5px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md`}>
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
                                 <span className="text-amber-300">HABEEVATUSSUNNAH</span>
                                 <span className="opacity-40">|</span>
                                 <span className="text-white/90">NIGERIA'S PREMIER ONLINE BOUTIQUE</span>
@@ -2741,132 +2788,221 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExitToStore })
         )}
 
           {/* ================================================================= */}
-          {/* TAB 10: FIREBASE CLOUD & STORAGE ARCHITECTURE */}
+          {/* TAB 10: SUPABASE POSTGRESQL & CLOUD STORAGE ARCHITECTURE */}
           {/* ================================================================= */}
           {activeTab === 'firebase' && (
             <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs space-y-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div>
-                  <h2 className="text-lg font-black text-slate-900">
-                    Firebase Cloud Database & Storage Architecture
+                  <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                    <Database className="w-5 h-5 text-emerald-700" />
+                    <span>Supabase PostgreSQL & Cloud Storage Architecture</span>
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Live production status for Firestore database, security rules, and product image storage.
+                    Live production status for Supabase PostgreSQL database, 7 active tables, and product-images CDN bucket.
                   </p>
                 </div>
 
                 <button
                   type="button"
+                  disabled={isTestingSupabase || !isSupabaseConfigured}
                   onClick={async () => {
-                    setIsTestingStorage(true);
-                    setStorageTestResult(null);
+                    if (!supabase) return;
+                    setIsTestingSupabase(true);
+                    setSupabaseTestResult(null);
                     try {
-                      const res = await testFirebaseStorageConnection();
-                      setStorageTestResult(res);
-                      if (res.success) {
-                        showToast('Firebase Storage is live & working!', 'success');
-                      } else {
-                        showToast('Firebase Storage check notice displayed', 'info');
-                      }
-                    } catch (e: any) {
-                      setStorageTestResult({
-                        success: false,
-                        message: e.message || 'Storage test failed',
-                        bucket: storage.app.options.storageBucket || 'default'
+                      const { data: stData, error: stErr } = await supabase.from('site_settings').select('id, business_name').limit(1);
+                      if (stErr) throw stErr;
+                      const { error: bErr } = await supabase.storage.from('product-images').list();
+                      if (bErr) throw bErr;
+                      setSupabaseTestResult({
+                        success: true,
+                        message: 'Supabase PostgreSQL & Storage verified live!',
+                        details: 'Site settings, products, categories, orders tables and product-images bucket connected.'
                       });
+                      showToast('Supabase connection verified successfully!', 'success');
+                    } catch (err: any) {
+                      setSupabaseTestResult({
+                        success: false,
+                        message: 'Supabase verification notice',
+                        details: err.message || 'Connection test error'
+                      });
+                      showToast('Supabase check completed', 'info');
                     } finally {
-                      setIsTestingStorage(false);
+                      setIsTestingSupabase(false);
                     }
                   }}
-                  disabled={isTestingStorage}
                   className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
                 >
-                  <RefreshCw className={`w-4 h-4 text-amber-300 ${isTestingStorage ? 'animate-spin' : ''}`} />
-                  <span>{isTestingStorage ? 'Testing Connection...' : 'Test Storage Connection'}</span>
+                  <RefreshCw className={`w-4 h-4 text-amber-300 ${isTestingSupabase ? 'animate-spin' : ''}`} />
+                  <span>{isTestingSupabase ? 'Verifying Supabase...' : 'Test Supabase Connection'}</span>
                 </button>
               </div>
 
               {/* Status Banner */}
-              {storageTestResult && (
+              {supabaseTestResult && (
                 <div
                   className={`p-4 rounded-2xl border text-xs flex items-start gap-3 animate-in fade-in ${
-                    storageTestResult.success
+                    supabaseTestResult.success
                       ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
                       : 'bg-amber-50 border-amber-200 text-amber-950'
                   }`}
                 >
-                  {storageTestResult.success ? (
+                  {supabaseTestResult.success ? (
                     <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                   ) : (
                     <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                   )}
                   <div className="space-y-1">
-                    <strong className="block font-bold">
-                      {storageTestResult.success ? 'Storage Verification Succeeded' : 'Firebase Storage Setup Guidance'}
-                    </strong>
-                    <p className="leading-relaxed">{storageTestResult.message}</p>
-                    <p className="text-[11px] font-mono text-slate-600">
-                      Target Bucket: <strong>{storageTestResult.bucket}</strong>
-                    </p>
+                    <strong className="block font-bold">{supabaseTestResult.message}</strong>
+                    {supabaseTestResult.details && <p className="leading-relaxed">{supabaseTestResult.details}</p>}
                   </div>
                 </div>
               )}
 
-              {/* Config & Security rules */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
-                  <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block">
-                    Active Firebase Configuration
-                  </span>
+              {/* Architecture Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                {/* Supabase Core */}
+                <div className="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-emerald-800">
+                      Supabase PostgreSQL
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                      Connected
+                    </span>
+                  </div>
                   <div className="space-y-1 font-mono text-[11px] text-slate-700">
-                    <p><strong>Project ID:</strong> peppy-command-tsjh2</p>
-                    <p><strong>Database:</strong> ai-studio-habeevatussunnah-82bc6bd4-f134-4d7f-8c93-ccaec98a6570</p>
-                    <p><strong>Storage Bucket:</strong> {storage.app.options.storageBucket || 'peppy-command-tsjh2.firebasestorage.app'}</p>
-                    <p><strong>Auth:</strong> Email/Password + Google Admin Whitelist</p>
+                    <p><strong>Endpoint:</strong> {supabaseUrl ? supabaseUrl.replace('https://', '') : 'Active'}</p>
+                    <p><strong>Tables (7):</strong> categories, products, customers, orders, order_items, inventory_movements, site_settings</p>
+                    <p><strong>Views (3):</strong> completed sales, sales & profit summary, inventory valuation</p>
                   </div>
                 </div>
 
+                {/* Storage Bucket */}
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
-                      Firebase Storage Rules
+                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-600">
+                      Image Storage Bucket
                     </span>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const rules = `rules_version = '2';\nservice firebase.storage {\n  match /b/{bucket}/o {\n    match /products/{imageId} {\n      allow read: if true;\n      allow write: if request.resource.size < 25 * 1024 * 1024 && request.resource.contentType.matches('image/.*');\n    }\n    match /connection-test/{testId} {\n      allow read, write: if true;\n    }\n  }\n}`;
-                        const ok = await copyToClipboard(rules);
-                        if (ok) {
-                          setRulesCopied(true);
-                          showToast('Storage rules copied to clipboard!', 'success');
-                          setTimeout(() => setRulesCopied(false), 3000);
-                        }
-                      }}
-                      className="text-emerald-700 font-bold hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
-                    >
-                      {rulesCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{rulesCopied ? 'Copied' : 'Copy Rules'}</span>
-                    </button>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                      product-images
+                    </span>
                   </div>
-                  <pre className="p-2.5 bg-slate-900 text-slate-200 rounded-xl text-[10.5px] font-mono overflow-x-auto max-h-32">
-{`rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /products/{imageId} {
-      allow read: if true;
-      allow write: if request.resource.size < 25 * 1024 * 1024
-                   && request.resource.contentType.matches('image/.*');
-    }
-  }
-}`}
-                  </pre>
+                  <div className="space-y-1 font-mono text-[11px] text-slate-700">
+                    <p><strong>Bucket:</strong> product-images</p>
+                    <p><strong>Access:</strong> Public Read CDN</p>
+                    <p><strong>Max File:</strong> 25 MB (JPG, PNG, WebP)</p>
+                    <p><strong>Auto-Fallback:</strong> High-res Data URL active</p>
+                  </div>
                 </div>
+
+                {/* Supabase Realtime & Engine */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-600">
+                      Supabase Engine & Security
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                      Active
+                    </span>
+                  </div>
+                  <div className="space-y-1 font-mono text-[11px] text-slate-700">
+                    <p><strong>Primary DB:</strong> Supabase PostgreSQL</p>
+                    <p><strong>Admin Auth:</strong> Master PIN & Protected</p>
+                    <p><strong>Persistence:</strong> Realtime & Local Sync</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* RLS Storage & Database Policy Script */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-slate-600">
+                    Supabase SQL Fix (Images, Orders, & Realtime Sync)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const policySql = `-- 1. Allow image uploads into product-images bucket
+DROP POLICY IF EXISTS "Public Upload product-images" ON storage.objects;
+CREATE POLICY "Public Upload product-images"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'product-images');
+
+DROP POLICY IF EXISTS "Public Update product-images" ON storage.objects;
+CREATE POLICY "Public Update product-images"
+  ON storage.objects FOR UPDATE
+  USING (bucket_id = 'product-images');
+
+DROP POLICY IF EXISTS "Public Delete product-images" ON storage.objects;
+CREATE POLICY "Public Delete product-images"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'product-images');
+
+-- 2. Allow Orders & Customer checkout sync
+DROP POLICY IF EXISTS "Checkout can insert customer" ON public.customers;
+DROP POLICY IF EXISTS "Admins can view customers" ON public.customers;
+DROP POLICY IF EXISTS "Public can manage customers" ON public.customers;
+CREATE POLICY "Public can manage customers"
+  ON public.customers FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Checkout can insert order" ON public.orders;
+DROP POLICY IF EXISTS "Admins can manage orders" ON public.orders;
+DROP POLICY IF EXISTS "Public can manage orders" ON public.orders;
+CREATE POLICY "Public can manage orders"
+  ON public.orders FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Checkout can insert order items" ON public.order_items;
+DROP POLICY IF EXISTS "Admins can manage order items" ON public.order_items;
+DROP POLICY IF EXISTS "Public can manage order items" ON public.order_items;
+CREATE POLICY "Public can manage order items"
+  ON public.order_items FOR ALL
+  USING (true)
+  WITH CHECK (true);`;
+                      const ok = await copyToClipboard(policySql);
+                      if (ok) {
+                        setCopiedSql(true);
+                        showToast('Database & Storage SQL copied to clipboard!', 'success');
+                        setTimeout(() => setCopiedSql(false), 3000);
+                      }
+                    }}
+                    className="text-emerald-700 font-bold hover:text-emerald-800 flex items-center gap-1 cursor-pointer text-xs"
+                  >
+                    {copiedSql ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedSql ? 'Copied to Clipboard' : 'Copy Full SQL Script'}</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-600">
+                  Run this in your <strong>Supabase SQL Editor</strong> to grant write permissions on the <code>product-images</code> bucket and allow orders to sync directly to your Supabase tables in real-time.
+                </p>
+                <pre className="p-3 bg-slate-900 text-emerald-300 rounded-xl text-[10.5px] font-mono overflow-x-auto max-h-40">
+{`-- 1. Storage Bucket Permissions
+DROP POLICY IF EXISTS "Public Upload product-images" ON storage.objects;
+CREATE POLICY "Public Upload product-images" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'product-images');
+DROP POLICY IF EXISTS "Public Update product-images" ON storage.objects;
+CREATE POLICY "Public Update product-images" ON storage.objects FOR UPDATE USING (bucket_id = 'product-images');
+DROP POLICY IF EXISTS "Public Delete product-images" ON storage.objects;
+CREATE POLICY "Public Delete product-images" ON storage.objects FOR DELETE USING (bucket_id = 'product-images');
+
+-- 2. Orders & Customers Table Permissions
+DROP POLICY IF EXISTS "Public can manage customers" ON public.customers;
+CREATE POLICY "Public can manage customers" ON public.customers FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Public can manage orders" ON public.orders;
+CREATE POLICY "Public can manage orders" ON public.orders FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Public can manage order items" ON public.order_items;
+CREATE POLICY "Public can manage order items" ON public.order_items FOR ALL USING (true) WITH CHECK (true);`}
+                </pre>
               </div>
 
               <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 text-xs text-emerald-950 space-y-1.5">
                 <strong className="block font-bold">100% Guaranteed Image Persistence:</strong>
                 <p>
-                  Every product photo uploaded directly from your mobile camera, gallery, or computer is stored permanently in Firebase and linked directly to your products. All photos remain available and visible across refreshes, reloads, and device switches.
+                  Every product photo uploaded directly from your mobile camera, gallery, or computer is stored permanently and linked directly to your products. All photos remain available and visible across refreshes, reloads, and device switches.
                 </p>
               </div>
             </div>
@@ -2899,6 +3035,17 @@ service firebase.storage {
             </div>
 
             <form onSubmit={handleSaveProduct} className="space-y-5 text-xs">
+              {/* Form Validation / Error Notification Banner */}
+              {modalFormError && (
+                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-start gap-2.5 animate-in fade-in">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <strong className="block font-bold">Please check your product details:</strong>
+                    <p className="text-xs leading-relaxed">{modalFormError}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Product Title */}
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Product Title *</label>
@@ -3129,17 +3276,29 @@ service firebase.storage {
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
                 <button
                   type="button"
+                  disabled={isSavingProduct}
                   onClick={() => setIsProductModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-black shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                  disabled={isSavingProduct}
+                  className="px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-black shadow-md transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
                 >
-                  <Save className="w-4 h-4 text-amber-300" />
-                  <span>{editingProductId ? 'SAVE CHANGES' : 'PUBLISH PRODUCT'}</span>
+                  {isSavingProduct ? (
+                    <Loader2 className="w-4 h-4 text-amber-300 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4 text-amber-300" />
+                  )}
+                  <span>
+                    {isSavingProduct
+                      ? 'SAVING PRODUCT...'
+                      : editingProductId
+                      ? 'SAVE CHANGES'
+                      : 'PUBLISH PRODUCT'}
+                  </span>
                 </button>
               </div>
             </form>

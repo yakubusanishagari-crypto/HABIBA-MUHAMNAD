@@ -2,7 +2,6 @@ import React from 'react';
 import {
   ShieldCheck,
   Heart,
-  Sparkles,
   CheckCircle2,
   ArrowRight,
   Truck,
@@ -74,8 +73,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onShopNow, onContact }) =>
           <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-400/15 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 max-w-3xl mx-auto space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-amber-300 font-black text-xs uppercase tracking-widest shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+            <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-amber-300 font-black text-xs uppercase tracking-widest shadow-sm">
               <span>{settings.business_name}</span>
             </div>
 

@@ -3,8 +3,8 @@ import {
   ArrowRight,
   ShieldCheck,
   Truck,
-  MessageCircle,
-  CheckCircle2
+  CheckCircle2,
+  Package
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
 import { HERO_BACKGROUND_CONFIGS } from '../data/heroBackgrounds';
@@ -14,6 +14,7 @@ interface HeroBannerProps {
   onShopNow: () => void;
   onExploreCollection: () => void;
   onSelectCategoryChip?: (catId: string, gender?: string) => void;
+  onNavigate?: (view: string) => void;
   previewBackground?: HeroBackgroundOption;
 }
 
@@ -21,6 +22,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   onShopNow,
   onExploreCollection,
   onSelectCategoryChip,
+  onNavigate,
   previewBackground
 }) => {
   const { language, dir, t, settings } = useShop();
@@ -44,7 +46,6 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           <div className="lg:col-span-7 space-y-6 sm:space-y-8 text-center lg:text-left">
             {/* Prestigious Brand Kicker / Status Pill */}
             <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full ${bgConfig.kickerBgClass} text-[10.5px] sm:text-xs font-black tracking-widest uppercase shadow-lg backdrop-blur-md`}>
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
               <span className="text-amber-300">HABEEVATUSSUNNAH</span>
               <span className="text-amber-500/60">|</span>
               <span className="text-white/95">
@@ -140,9 +141,17 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               </div>
             </div>
 
-            {/* Trust Highlights Grid Beneath Copy */}
+            {/* Trust Highlights Grid Beneath Copy: FULLY FUNCTIONAL BUTTONS */}
             <div className={`pt-6 border-t ${bgConfig.borderClass} grid grid-cols-2 sm:grid-cols-4 gap-3 text-center lg:text-left`}>
-              <div className={`p-3 rounded-2xl ${bgConfig.cardBgClass} backdrop-blur-xs space-y-1`}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onNavigate) onNavigate('shipping');
+                  else onExploreCollection();
+                }}
+                className={`p-3 rounded-2xl ${bgConfig.cardBgClass} hover:bg-white/20 active:scale-[0.98] transition-all space-y-1 text-center lg:text-left cursor-pointer border border-white/10 hover:border-amber-400/40`}
+                title="View Nationwide Shipping Details"
+              >
                 <div className="flex items-center justify-center lg:justify-start gap-1.5 text-amber-400">
                   <Truck className="w-4 h-4 shrink-0" />
                   <span className="text-xs font-black uppercase tracking-wider text-white">
@@ -152,9 +161,14 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 <p className="text-[11px] text-white/80 font-medium">
                   {language === 'ha' ? 'Isarwa cikin sauri' : language === 'ar' ? 'توصيل سريع وموثوق' : 'Fast delivery in Nigeria'}
                 </p>
-              </div>
+              </button>
 
-              <div className={`p-3 rounded-2xl ${bgConfig.cardBgClass} backdrop-blur-xs space-y-1`}>
+              <button
+                type="button"
+                onClick={onShopNow}
+                className={`p-3 rounded-2xl ${bgConfig.cardBgClass} hover:bg-white/20 active:scale-[0.98] transition-all space-y-1 text-center lg:text-left cursor-pointer border border-white/10 hover:border-amber-400/40`}
+                title="Browse Verified Authentic Collection"
+              >
                 <div className="flex items-center justify-center lg:justify-start gap-1.5 text-amber-400">
                   <ShieldCheck className="w-4 h-4 shrink-0" />
                   <span className="text-xs font-black uppercase tracking-wider text-white">
@@ -164,9 +178,17 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 <p className="text-[11px] text-white/80 font-medium">
                   {language === 'ha' ? 'Kayan asali 100%' : language === 'ar' ? 'أصلي ومفحوص 100%' : '100% Inspected authentic'}
                 </p>
-              </div>
+              </button>
 
-              <div className={`p-3 rounded-2xl ${bgConfig.cardBgClass} backdrop-blur-xs space-y-1`}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onNavigate) onNavigate('terms');
+                  else onShopNow();
+                }}
+                className={`p-3 rounded-2xl ${bgConfig.cardBgClass} hover:bg-white/20 active:scale-[0.98] transition-all space-y-1 text-center lg:text-left cursor-pointer border border-white/10 hover:border-amber-400/40`}
+                title="View Bank Transfer & Payment Protection"
+              >
                 <div className="flex items-center justify-center lg:justify-start gap-1.5 text-amber-400">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span className="text-xs font-black uppercase tracking-wider text-white">
@@ -176,17 +198,27 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 <p className="text-[11px] text-white/80 font-medium">
                   {language === 'ha' ? 'Biyan kudi ta OPAY' : language === 'ar' ? 'دفع ميسر عبر أوباي' : 'Smooth OPAY checkout'}
                 </p>
-              </div>
+              </button>
 
-              <div className={`p-3 rounded-2xl ${bgConfig.cardBgClass} backdrop-blur-xs space-y-1`}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onNavigate) onNavigate('order-lookup');
+                  else onShopNow();
+                }}
+                className={`p-3 rounded-2xl ${bgConfig.cardBgClass} hover:bg-white/20 active:scale-[0.98] transition-all space-y-1 text-center lg:text-left cursor-pointer border border-white/10 hover:border-amber-400/40`}
+                title="Track Live Order Status"
+              >
                 <div className="flex items-center justify-center lg:justify-start gap-1.5 text-amber-400">
-                  <MessageCircle className="w-4 h-4 shrink-0" />
-                  <span className="text-xs font-black uppercase tracking-wider text-white">WhatsApp</span>
+                  <Package className="w-4 h-4 shrink-0" />
+                  <span className="text-xs font-black uppercase tracking-wider text-white">
+                    {language === 'ha' ? 'Binciken Oda' : language === 'ar' ? 'تتبع الطلب' : 'Order Tracking'}
+                  </span>
                 </div>
                 <p className="text-[11px] text-white/80 font-medium">
-                  {language === 'ha' ? 'Tabbatar da oda nan take' : language === 'ar' ? 'تأكيد فوري للطلب' : 'Instant order verification'}
+                  {language === 'ha' ? 'Duba matsayin odarka' : language === 'ar' ? 'متابعة الشحنة مباشرة' : 'Check live fulfillment'}
                 </p>
-              </div>
+              </button>
             </div>
           </div>
 

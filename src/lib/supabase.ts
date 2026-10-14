@@ -1,13 +1,28 @@
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { INITIAL_CATEGORIES, INITIAL_PRODUCTS, INITIAL_SETTINGS, INITIAL_SUBCATEGORIES } from '../data/initialData';
 import { Category, Subcategory, Product, Order, ContactMessage, SiteSettings, PaymentStatus, OrderStatus, TrackingStage } from '../types';
 
-/**
- * Notice: This project exclusively uses Firebase Firestore & Firebase Storage
- * for database persistence, media storage, and admin authentication.
- * Supabase has been cleanly decommissioned as requested.
- */
-export const isSupabaseConfigured = false;
-export const supabase = null;
+const rawSupabaseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || '';
+const rawAnonKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || '';
+
+// Clean Supabase URL: strip /rest/v1 or trailing slashes automatically
+export const supabaseUrl = rawSupabaseUrl
+  .trim()
+  .replace(/\/rest\/v1\/?$/i, '')
+  .replace(/\/+$/, '');
+export const supabaseAnonKey = rawAnonKey.trim();
+
+export const isSupabaseConfigured = Boolean(
+  supabaseUrl &&
+  supabaseAnonKey &&
+  supabaseUrl.startsWith('https://') &&
+  !supabaseUrl.includes('your-project') &&
+  !supabaseAnonKey.includes('your-anon-key')
+);
+
+export const supabase: SupabaseClient | null = isSupabaseConfigured
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 // Storage keys for persistent store fallback cache
 const STORAGE_KEYS = {
@@ -85,7 +100,21 @@ export class LocalDatabaseService {
   static getSubcategories(): Subcategory[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.SUBCATEGORIES);
-      if (data) return JSON.parse(data);
+      if (data) {
+        const stored: Subcategory[] = JSON.parse(data);
+        const existingIds = new Set(stored.map(s => s.id));
+        let hasNew = false;
+        for (const initial of INITIAL_SUBCATEGORIES) {
+          if (!existingIds.has(initial.id)) {
+            stored.push(initial);
+            hasNew = true;
+          }
+        }
+        if (hasNew) {
+          this.saveSubcategories(stored);
+        }
+        return stored;
+      }
     } catch (e) {
       console.warn('Error reading subcategories from storage', e);
     }
@@ -163,9 +192,23 @@ export class LocalDatabaseService {
     this.saveProducts(products);
   }
 
+  static getOrderById(orderId: string): Order | undefined {
+    if (!orderId) return undefined;
+    const targetId = orderId.trim().toUpperCase();
+    const orders = this.getOrders();
+    return orders.find(o =>
+      o.id.trim().toUpperCase() === targetId ||
+      ((o as any).order_number && (o as any).order_number.trim().toUpperCase() === targetId)
+    );
+  }
+
   static updateOrderStatus(orderId: string, orderStatus: OrderStatus): boolean {
     const orders = this.getOrders();
-    const idx = orders.findIndex(o => o.id === orderId);
+    const targetId = (orderId || '').trim().toUpperCase();
+    const idx = orders.findIndex(o =>
+      o.id.trim().toUpperCase() === targetId ||
+      ((o as any).order_number && (o as any).order_number.trim().toUpperCase() === targetId)
+    );
     if (idx !== -1) {
       orders[idx].order_status = orderStatus;
       orders[idx].updated_at = new Date().toISOString();
@@ -177,7 +220,11 @@ export class LocalDatabaseService {
 
   static updatePaymentStatus(orderId: string, paymentStatus: PaymentStatus): boolean {
     const orders = this.getOrders();
-    const idx = orders.findIndex(o => o.id === orderId);
+    const targetId = (orderId || '').trim().toUpperCase();
+    const idx = orders.findIndex(o =>
+      o.id.trim().toUpperCase() === targetId ||
+      ((o as any).order_number && (o as any).order_number.trim().toUpperCase() === targetId)
+    );
     if (idx !== -1) {
       orders[idx].payment_status = paymentStatus;
       // If confirmed and tracking stage not set yet, automatically initialize to 'SELLER CONFIRMED'
@@ -194,7 +241,11 @@ export class LocalDatabaseService {
 
   static updateOrderTrackingStage(orderId: string, trackingStage: TrackingStage): boolean {
     const orders = this.getOrders();
-    const idx = orders.findIndex(o => o.id === orderId);
+    const targetId = (orderId || '').trim().toUpperCase();
+    const idx = orders.findIndex(o =>
+      o.id.trim().toUpperCase() === targetId ||
+      ((o as any).order_number && (o as any).order_number.trim().toUpperCase() === targetId)
+    );
     if (idx !== -1) {
       orders[idx].tracking_stage = trackingStage;
       orders[idx].tracking_updated_at = new Date().toISOString();

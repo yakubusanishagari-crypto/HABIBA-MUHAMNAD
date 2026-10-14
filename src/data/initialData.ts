@@ -133,42 +133,74 @@ export const INITIAL_CATEGORIES: Category[] = [
 ];
 
 export const INITIAL_SUBCATEGORIES: Subcategory[] = [
-  // Women
-  { id: 'sub-women-dresses', category_id: 'cat-women', name: 'Dresses', slug: 'dresses' },
-  { id: 'sub-women-clothing', category_id: 'cat-women', name: 'Clothing & Blouses', slug: 'clothing' },
-  { id: 'sub-women-shoes', category_id: 'cat-women', name: 'Shoes & Heels', slug: 'shoes' },
-  { id: 'sub-women-bags', category_id: 'cat-women', name: 'Handbags & Purses', slug: 'handbags' },
-  { id: 'sub-women-jewelry', category_id: 'cat-women', name: 'Jewelry & Bangles', slug: 'jewelry' },
-  { id: 'sub-women-cosmetics', category_id: 'cat-women', name: 'Cosmetics & Skincare', slug: 'cosmetics' },
+  // 1. Home & Kitchen (Expanded with essential home, kitchenware, bedding, and decor)
+  { id: 'sub-home-beds', category_id: 'cat-home', name: 'Bed Sets & Duvets', slug: 'beds-duvets' },
+  { id: 'sub-home-cookware', category_id: 'cat-home', name: 'Cookware, Pots & Non-Stick Pans', slug: 'cookware-pots' },
+  { id: 'sub-home-dinnerware', category_id: 'cat-home', name: 'Dinnerware, Plates & Cutlery Sets', slug: 'dinnerware-cutlery' },
+  { id: 'sub-home-appliances', category_id: 'cat-home', name: 'Blenders & Small Appliances', slug: 'kitchen-appliances' },
+  { id: 'sub-home-thermos', category_id: 'cat-home', name: 'Thermos Flasks & Food Warmers', slug: 'thermos-coolers' },
+  { id: 'sub-home-storage', category_id: 'cat-home', name: 'Storage Organizers & Spice Racks', slug: 'storage-organizers' },
+  { id: 'sub-home-curtains-rugs', category_id: 'cat-home', name: 'Curtains, Rugs & Living Room Decor', slug: 'curtains-rugs' },
+  { id: 'sub-home-prayer-mats', category_id: 'cat-home', name: 'Prayer Mats & Islamic Home Decor', slug: 'prayer-mats' },
+  { id: 'sub-home-towels', category_id: 'cat-home', name: 'Bath Towels & Bathroom Accessories', slug: 'towels-bathroom' },
+  { id: 'sub-home-clocks-art', category_id: 'cat-home', name: 'Wall Clocks & Decorative Mirrors', slug: 'wall-clocks-mirrors' },
+  { id: 'sub-home-dish-racks', category_id: 'cat-home', name: 'Dish Drying Racks & Counter Organizers', slug: 'dish-racks' },
+  { id: 'sub-home-sheets-pillows', category_id: 'cat-home', name: 'Bed Sheets, Pillows & Mattress Covers', slug: 'bedsheets-pillows' },
 
-  // Men
+  // 2. Women
+  { id: 'sub-women-abayas', category_id: 'cat-women', name: 'Modest Abayas & Jalabiyas', slug: 'abayas-jalabiyas' },
+  { id: 'sub-women-dresses', category_id: 'cat-women', name: 'Dresses & Gowns', slug: 'dresses' },
+  { id: 'sub-women-hijabs', category_id: 'cat-women', name: 'Hijabs, Khimars & Head Veils', slug: 'hijabs-veils' },
+  { id: 'sub-women-clothing', category_id: 'cat-women', name: 'Clothing & Blouses', slug: 'clothing' },
+  { id: 'sub-women-fabrics', category_id: 'cat-women', name: 'Lace & Brocade Traditional Wear', slug: 'traditional-fabrics' },
+  { id: 'sub-women-shoes', category_id: 'cat-women', name: 'Women Shoes & Heels', slug: 'women-shoes' },
+  { id: 'sub-women-bags', category_id: 'cat-women', name: 'Handbags & Purses', slug: 'women-bags' },
+  { id: 'sub-women-jewelry', category_id: 'cat-women', name: 'Jewelry & Bangles', slug: 'women-jewelry' },
+  { id: 'sub-women-cosmetics', category_id: 'cat-women', name: 'Cosmetics & Skincare', slug: 'women-cosmetics' },
+
+  // 3. Men
+  { id: 'sub-men-traditional', category_id: 'cat-men', name: 'Traditional Kaftans & Shadda', slug: 'kaftans-shadda' },
   { id: 'sub-men-shirts', category_id: 'cat-men', name: 'Shirts & Polos', slug: 'shirts' },
   { id: 'sub-men-tshirts', category_id: 'cat-men', name: 'T-Shirts & Tees', slug: 't-shirts' },
-  { id: 'sub-men-trousers', category_id: 'cat-men', name: 'Trousers & Pants', slug: 'trousers' },
+  { id: 'sub-men-trousers', category_id: 'cat-men', name: 'Trousers & Chinos', slug: 'trousers' },
   { id: 'sub-men-jackets', category_id: 'cat-men', name: 'Jackets & Blazers', slug: 'jackets' },
-  { id: 'sub-men-shoes', category_id: 'cat-men', name: 'Shoes & Sneakers', slug: 'shoes' },
-  { id: 'sub-men-watches', category_id: 'cat-men', name: 'Watches & Accessories', slug: 'watches' },
+  { id: 'sub-men-caps', category_id: 'cat-men', name: 'Native Caps & Traditional Hats', slug: 'caps-hats' },
+  { id: 'sub-men-shoes', category_id: 'cat-men', name: 'Shoes & Loafers', slug: 'men-shoes' },
+  { id: 'sub-men-belts-wallets', category_id: 'cat-men', name: 'Leather Belts & Wallets', slug: 'belts-wallets' },
+  { id: 'sub-men-watches', category_id: 'cat-men', name: 'Watches & Accessories', slug: 'men-watches' },
 
-  // Kids
-  { id: 'sub-kids-boys', category_id: 'cat-kids', name: 'Boys Collection', slug: 'boys-collection' },
-  { id: 'sub-kids-girls', category_id: 'cat-kids', name: 'Girls Collection', slug: 'girls-collection' },
-  { id: 'sub-kids-clothing', category_id: 'cat-kids', name: 'Kids Clothing', slug: 'clothing' },
-  { id: 'sub-kids-shoes', category_id: 'cat-kids', name: 'Kids Shoes & Sandals', slug: 'shoes' },
-  { id: 'sub-kids-bags', category_id: 'cat-kids', name: 'Kids Backpacks', slug: 'bags' },
+  // 4. Kids Collection
+  { id: 'sub-kids-boys', category_id: 'cat-kids', name: 'Boys Sets & Outfits', slug: 'boys-collection' },
+  { id: 'sub-kids-girls', category_id: 'cat-kids', name: 'Girls Dresses & Sets', slug: 'girls-collection' },
+  { id: 'sub-kids-baby', category_id: 'cat-kids', name: 'Baby Rompers & Newborn Essentials', slug: 'baby-essentials' },
+  { id: 'sub-kids-shoes', category_id: 'cat-kids', name: 'Kids Shoes, Trainers & Sandals', slug: 'kids-shoes' },
+  { id: 'sub-kids-bags', category_id: 'cat-kids', name: 'Kids School Bags & Lunch Boxes', slug: 'kids-bags' },
 
-  // Shoes
-  { id: 'sub-shoes-sneakers', category_id: 'cat-shoes', name: 'Sneakers', slug: 'sneakers' },
-  { id: 'sub-shoes-formal', category_id: 'cat-shoes', name: 'Formal Shoes', slug: 'formal-shoes' },
+  // 5. Shoes & Footwear
+  { id: 'sub-shoes-sneakers', category_id: 'cat-shoes', name: 'Sneakers & Casual Trainers', slug: 'sneakers' },
+  { id: 'sub-shoes-formal', category_id: 'cat-shoes', name: 'Formal Leather Shoes & Loafers', slug: 'formal-shoes' },
   { id: 'sub-shoes-sandals', category_id: 'cat-shoes', name: 'Sandals & Slippers', slug: 'sandals' },
+  { id: 'sub-shoes-heels', category_id: 'cat-shoes', name: 'High Heels & Wedges', slug: 'heels-wedges' },
 
-  // Bags
-  { id: 'sub-bags-handbags', category_id: 'cat-bags', name: 'Handbags & Clutches', slug: 'handbags' },
+  // 6. Bags & Luggage
+  { id: 'sub-bags-handbags', category_id: 'cat-bags', name: 'Designer Handbags & Shoulder Bags', slug: 'handbags' },
   { id: 'sub-bags-backpacks', category_id: 'cat-bags', name: 'Backpacks & Laptop Bags', slug: 'backpacks' },
+  { id: 'sub-bags-luggage', category_id: 'cat-bags', name: 'Travel Luggage & Suitcases', slug: 'luggage' },
+  { id: 'sub-bags-wallets', category_id: 'cat-bags', name: 'Wallets & Clutch Purses', slug: 'wallets-clutches' },
 
-  // Home & Kitchen
-  { id: 'sub-home-beds', category_id: 'cat-home', name: 'Bed Sets & Duvets', slug: 'beds' },
-  { id: 'sub-home-kitchen', category_id: 'cat-home', name: 'Kitchen Materials & Cookware', slug: 'kitchen-materials' },
-  { id: 'sub-home-accessories', category_id: 'cat-home', name: 'Kitchen Accessories', slug: 'kitchen-accessories' }
+  // 7. Jewelry & Watches
+  { id: 'sub-jewelry-watches', category_id: 'cat-jewelry', name: 'Luxury Watches & Timepieces', slug: 'luxury-watches' },
+  { id: 'sub-jewelry-bangles', category_id: 'cat-jewelry', name: 'Gold & Silver Plated Bangles', slug: 'bangles-bracelets' },
+  { id: 'sub-jewelry-necklaces', category_id: 'cat-jewelry', name: 'Necklaces & Pendant Sets', slug: 'necklaces-pendants' },
+  { id: 'sub-jewelry-rings', category_id: 'cat-jewelry', name: 'Rings & Wedding Bands', slug: 'rings' },
+  { id: 'sub-jewelry-earrings', category_id: 'cat-jewelry', name: 'Earrings & Hair Accessories', slug: 'earrings' },
+
+  // 8. Cosmetics & Beauty
+  { id: 'sub-cosmetics-perfumes', category_id: 'cat-cosmetics', name: 'Arabian Oud & Luxury Perfumes', slug: 'perfumes-oud' },
+  { id: 'sub-cosmetics-skincare', category_id: 'cat-cosmetics', name: 'Skincare, Glow Serums & Lotions', slug: 'skincare-serums' },
+  { id: 'sub-cosmetics-makeup', category_id: 'cat-cosmetics', name: 'Makeup, Powder & Face Cosmetics', slug: 'makeup-cosmetics' },
+  { id: 'sub-cosmetics-hair', category_id: 'cat-cosmetics', name: 'Hair Care, Conditioners & Oils', slug: 'hair-care' },
+  { id: 'sub-cosmetics-bath', category_id: 'cat-cosmetics', name: 'Bath Essentials & Body Washes', slug: 'bath-body' }
 ];
 
 export const INITIAL_PRODUCTS: Product[] = [
